@@ -1,0 +1,80 @@
+name: Sync Upstream
+
+# Merges the latest *released* upstream tag (e.g. 1.26.3) into master — not
+# upstream/master HEAD. That keeps master parked on a stable release point plus
+# this fork's own patches, so the `latest` image tag is always a stable version.
+#
+# Note: pushes made with GITHUB_TOKEN do not trigger other workflows, so the
+# image build is invoked directly here via workflow_call instead of relying on
+# the push event in ghcr.yml.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 10:00 SGT
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Rebuild the image even if already up to date'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      updated: ${{ steps.merge.outputs.updated }}
+      version: ${{ steps.merge.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Merge latest upstream release
+        id: merge
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/gotson/komga.git
+          git fetch --tags --force upstream
+
+          latest=$(git tag -l --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$latest" ]; then
+            echo "::error::no upstream release tag found"
+            exit 1
+          fi
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          echo "Latest upstream release: **$latest**" >> "$GITHUB_STEP_SUMMARY"
+
+          if git merge-base --is-ancestor "$latest" HEAD; then
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            echo "master already contains $latest — nothing to do" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if ! git merge --no-edit -m "Merge upstream release $latest into master" "$latest"; then
+            git merge --abort || true
+            echo "::error::merge conflict with upstream $latest — resolve manually"
+            echo "Merge conflict with \`$latest\` — resolve manually" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          git push origin master
+          git push origin --tags
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+          echo "Merged \`$latest\` into master" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: sync
+    if: needs.sync.outputs.updated == 'true' || inputs.force_build
+    uses: ./.github/workflows/ghcr.yml
+    with:
+      ref: master
+    permissions:
+      contents: read
+      packages: write
