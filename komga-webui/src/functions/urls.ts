@@ -26,6 +26,25 @@ export function bookFileUrl(bookId: string): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/file`
 }
 
+/**
+ * Fork-only Range-capable variant of {@link bookFileUrl}, used by the archive page
+ * loader. `v` identifies the file's current content: it busts caches when the file is
+ * replaced, and tells the server the response is safe to mark immutable.
+ */
+export function bookFileRangedUrl(bookId: string, version: string): string {
+  return `${urls.originNoSlash}/api/v1/books/${bookId}/file-ranged?v=${encodeURIComponent(version)}`
+}
+
+/**
+ * Must produce the same string as `Book.versionToken()` on the server
+ * (komga/src/main/kotlin/org/gotson/komga/interfaces/api/BookFileRangedController.kt).
+ */
+export function bookVersionToken(book: { fileHash?: string, fileLastModified?: Date | string, sizeBytes: number }): string {
+  if (book.fileHash) return book.fileHash
+  const epochSeconds = Math.floor(new Date(book.fileLastModified as any).getTime() / 1000)
+  return `${epochSeconds}-${book.sizeBytes}`
+}
+
 export function bookPageUrl(bookId: string, page: number, convertTo?: string): string {
   let url = `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}`
   if (convertTo) {

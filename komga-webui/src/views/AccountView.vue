@@ -49,6 +49,38 @@
       </v-col>
     </v-row>
 
+    <v-row align="center" v-if="preloadMaxMb > 0">
+      <v-col cols="12" md="8" lg="6" xl="4">
+        <span>{{ $t('account_settings.archive_mode') }}</span>
+        <v-select
+          :items="archiveModeOptions"
+          v-model="archiveMode"
+          dense
+          filled
+          hide-details
+        />
+        <div class="text-caption text--secondary mt-2">
+          {{ $t('account_settings.archive_mode_hint') }}
+        </div>
+      </v-col>
+    </v-row>
+
+    <v-row align="center" v-if="preloadMaxMb > 0 && archiveMode === 'full'">
+      <v-col cols="12" md="8" lg="6" xl="4">
+        <span>{{ $t('account_settings.archive_whole_file_max_size') }}</span>
+        <v-select
+          :items="wholeFileSizeOptions"
+          v-model="archiveWholeFileMaxMb"
+          dense
+          filled
+          hide-details
+        />
+        <div class="text-caption text--secondary mt-2">
+          {{ $t('account_settings.archive_whole_file_hint') }}
+        </div>
+      </v-col>
+    </v-row>
+
     <password-change-dialog v-model="modalPasswordChange"
                             :user="me"
     />
@@ -81,6 +113,37 @@ export default Vue.extend({
       set(val: number): void {
         this.$store.commit('setWebreaderPreloadMaxMb', val)
       },
+    },
+    archiveMode: {
+      get(): string {
+        return this.$store.state.persistedState.webreader.archiveMode || 'preload'
+      },
+      set(val: string): void {
+        this.$store.commit('setWebreaderArchiveMode', val)
+      },
+    },
+    archiveWholeFileMaxMb: {
+      get(): number {
+        return this.$store.state.persistedState.webreader.archiveWholeFileMaxMb ?? 64
+      },
+      set(val: number): void {
+        this.$store.commit('setWebreaderArchiveWholeFileMaxMb', val)
+      },
+    },
+    archiveModeOptions(): { text: string, value: string }[] {
+      return [
+        {text: this.$t('account_settings.archive_mode_preload').toString(), value: 'preload'},
+        {text: this.$t('account_settings.archive_mode_full').toString(), value: 'full'},
+      ]
+    },
+    wholeFileSizeOptions(): { text: string, value: number }[] {
+      return [
+        {text: this.$t('account_settings.archive_whole_file_never').toString(), value: 0},
+        {text: '32 MB', value: 32},
+        {text: '64 MB', value: 64},
+        {text: '128 MB', value: 128},
+        {text: '256 MB', value: 256},
+      ]
     },
     preloadSizeOptions(): { text: string, value: number }[] {
       return [

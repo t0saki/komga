@@ -21,6 +21,11 @@ export const persistedModule: Module<any, any> = {
       animations: true,
       background: '',
       wholeArchivePreloadMaxMb: 0,
+      // 'preload' downloads the archive and swaps pages in as they decode;
+      // 'full' serves every page out of the archive, including the first paint.
+      archiveMode: 'preload',
+      // at or below this size the archive is fetched in one plain GET (CDN friendly)
+      archiveWholeFileMaxMb: 64,
     },
     epubreader: {},
     browsingPageSize: undefined as unknown as number,
@@ -133,6 +138,12 @@ export const persistedModule: Module<any, any> = {
     },
     setWebreaderPreloadMaxMb(state, val) {
       state.webreader.wholeArchivePreloadMaxMb = val
+    },
+    setWebreaderArchiveMode(state, val) {
+      state.webreader.archiveMode = val
+    },
+    setWebreaderArchiveWholeFileMaxMb(state, val) {
+      state.webreader.archiveWholeFileMaxMb = val
     },
     setEpubreaderSettings(state, val) {
       state.epubreader = val
