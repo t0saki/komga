@@ -53,7 +53,9 @@ class BookFileRangedController(
   private val bookRepository: BookRepository,
   private val mediaRepository: MediaRepository,
   private val contentRestrictionChecker: ContentRestrictionChecker,
-  @Value("\${komga-fork.ranged-file-public-cache:true}") private val publicCacheEnabled: Boolean,
+  // @param: keeps the annotation off the backing field — without it Kotlin emits it as a
+  // field annotation, which CodingRulesTest rejects as field injection.
+  @param:Value("\${komga-fork.ranged-file-public-cache:true}") private val publicCacheEnabled: Boolean,
 ) {
   @Operation(
     summary = "Download book file (Range capable)",
