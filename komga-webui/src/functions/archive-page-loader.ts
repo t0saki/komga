@@ -1,5 +1,5 @@
 import {inflateSync} from 'fflate'
-import {bookFileRangedUrl} from '@/functions/urls'
+import {bookFileCachedUrl, bookFileRangedUrl} from '@/functions/urls'
 import {PageDtoWithUrl} from '@/types/komga-books'
 import {
   localHeaderDataOffset,
@@ -13,6 +13,14 @@ import {
 } from '@/functions/zip-directory'
 
 const MB = 1024 * 1024
+
+/**
+ * A front-to-back sweep starting within this fraction of the file is treated as a
+ * whole-file read and fetched from the cacheable URL. It is the share of the archive we
+ * are willing to re-download in order to turn the request into a cache hit for everyone
+ * afterwards.
+ */
+const WHOLE_READ_START_RATIO = 0.1
 
 export interface ArchivePageLoaderOpts {
   bookId: string
@@ -149,12 +157,20 @@ export class ArchivePageLoader {
     this.opts.$debug?.('[archive-page-loader]', ...args)
   }
 
-  private url(): string {
-    return bookFileRangedUrl(this.opts.bookId, this.opts.versionToken)
+  /**
+   * The two endpoints carry deliberately different cache policies, so the whole-archive
+   * pass and the random-access requests must not share a URL: `file-cached` is the single
+   * cacheable 200 an edge may hold, `file-ranged` is `private` and always goes to origin.
+   * Sending a Range to `file-cached` would silently get the whole file back.
+   */
+  private url(whole: boolean): string {
+    return whole
+      ? bookFileCachedUrl(this.opts.bookId, this.opts.versionToken)
+      : bookFileRangedUrl(this.opts.bookId, this.opts.versionToken)
   }
 
   private fetch(range?: string): Promise<Response> {
-    return fetch(this.url(), {
+    return fetch(this.url(!range), {
       credentials: 'include',
       signal: this.controller.signal,
       headers: range ? {Range: range} : undefined,
@@ -337,8 +353,9 @@ export class ArchivePageLoader {
   }
 
   /**
-   * One un-ranged GET over the whole archive. This is the friendliest shape to put in
-   * front of a CDN — a single cacheable object rather than a spray of range requests.
+   * One un-ranged GET over the whole archive, against `file-cached`. This is the only
+   * shape worth putting in front of a CDN — a single cacheable object rather than a spray
+   * of range requests, and it streams through a cold edge instead of blocking on it.
    */
   private async streamWhole(): Promise<void> {
     const gen = this.generation
@@ -373,13 +390,21 @@ export class ArchivePageLoader {
       let cursor: ByteCursor | null = null
       try {
         const start = targets[0].entry.localHeaderOffset
-        const res = await this.fetch(`bytes=${start}-`)
+        // This pass runs to EOF regardless, so when it also starts near the front of the
+        // archive it is a whole-file read wearing a Range header — and Range is exactly
+        // what keeps it off the cacheable URL. Take it from `file-cached` instead: the
+        // only extra bytes are the ones before `start`, and in exchange the request
+        // becomes the single object an edge can hold. Mid-book resumes start far enough
+        // in that the ranged path is still the cheaper one.
+        const whole = this.opts.fileSizeBytes > 0 && start <= this.opts.fileSizeBytes * WHOLE_READ_START_RATIO
+        const res = whole ? await this.fetch() : await this.fetch(`bytes=${start}-`)
         if (!res.ok || !res.body) {
           this.debug('stream request failed', res.status)
           this.fallbackRemaining()
           return
         }
-        // A 200 to a ranged request means the body starts at 0, not at `start`.
+        // A 200 means the body starts at 0, not at `start` — either because we asked for
+        // the whole file above, or because something stripped the Range header.
         cursor = new ByteCursor(res.body.getReader(), res.status === 206 ? start : 0)
         this.activeCursor = cursor
         await this.consume(cursor, targets, gen)

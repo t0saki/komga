@@ -28,11 +28,26 @@ export function bookFileUrl(bookId: string): string {
 
 /**
  * Fork-only Range-capable variant of {@link bookFileUrl}, used by the archive page
- * loader. `v` identifies the file's current content: it busts caches when the file is
- * replaced, and tells the server the response is safe to mark immutable.
+ * loader for random access. `v` identifies the file's current content: it busts caches
+ * when the file is replaced, and tells the server the response is safe to mark immutable.
+ *
+ * Marked `private` by the server, never shared-cacheable: on a cold CDN edge a range
+ * request forces the whole archive to be pulled from origin before even a tail probe can
+ * be answered, which would put the entire file in front of first paint. Use
+ * {@link bookFileCachedUrl} for the whole-archive pass instead.
  */
 export function bookFileRangedUrl(bookId: string, version: string): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/file-ranged?v=${encodeURIComponent(version)}`
+}
+
+/**
+ * Fork-only companion to {@link bookFileRangedUrl}: same bytes, but always the whole file
+ * in a single 200 — Range is not supported. That is the only shape worth putting behind a
+ * CDN, so this is the URL the server marks `public, immutable` (when `v` matches) and the
+ * one an edge cache rule should match on.
+ */
+export function bookFileCachedUrl(bookId: string, version: string): string {
+  return `${urls.originNoSlash}/api/v1/books/${bookId}/file-cached?v=${encodeURIComponent(version)}`
 }
 
 /**
