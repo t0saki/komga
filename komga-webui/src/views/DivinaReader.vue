@@ -323,8 +323,8 @@ import ShortcutHelpDialog from '@/components/dialogs/ShortcutHelpDialog.vue'
 import {getBookTitleCompact} from '@/functions/book-title'
 import {checkImageSupport, ImageFeature} from '@/functions/check-image'
 import {bookPageUrl, bookVersionToken} from '@/functions/urls'
-import {WholeArchivePreloader} from '@/functions/whole-archive-preload'
 import {ArchivePageLoader, placeholderUrl} from '@/functions/archive-page-loader'
+import {ARCHIVE_MAX_MB_DEFAULT} from '@/plugins/persisted-state'
 import {getFileFromUrl} from '@/functions/file'
 import {resizeImageFile} from '@/functions/resize-image'
 import {ReadingDirection} from '@/types/enum-books'
@@ -381,7 +381,6 @@ export default Vue.extend({
       },
       pages: [] as PageDtoWithUrl[],
       page: undefined as unknown as number,
-      preloader: null as WholeArchivePreloader | null,
       archiveLoader: null as ArchivePageLoader | null,
       supportedMediaTypes: ['image/jpeg', 'image/png', 'image/gif'],
       convertTo: 'jpeg',
@@ -475,8 +474,6 @@ export default Vue.extend({
   destroyed() {
     document.documentElement.classList.remove('html-reader')
 
-    this.preloader?.dispose()
-    this.preloader = null
     this.archiveLoader?.dispose()
     this.archiveLoader = null
 
@@ -520,9 +517,6 @@ export default Vue.extend({
   computed: {
     continuousReader(): boolean {
       return this.readingDirection === ReadingDirection.WEBTOON
-    },
-    archiveMode(): string {
-      return this.$store.state.persistedState.webreader.archiveMode || 'preload'
     },
     progress(): number {
       return this.page / this.pagesCount * 100
@@ -721,7 +715,7 @@ export default Vue.extend({
       // In archive-only mode pages start on a transparent placeholder of the right size,
       // so the reader never requests an image from the server; the loader fills them in.
       // Pages without known dimensions have no safe placeholder and keep the server URL.
-      const archiveOnly = this.archiveMode === 'full' && this.archiveEligible()
+      const archiveOnly = this.archiveEnabled()
       pageDtos.forEach((p: any) => p['url'] = (archiveOnly && placeholderUrl(p)) || this.getPageUrl(p))
       this.pages = pageDtos as PageDtoWithUrl[]
 
@@ -771,54 +765,34 @@ export default Vue.extend({
       }
     },
     // Whether this book's pages can be served out of its own archive at all.
-    archiveEligible(): boolean {
+    archiveMaxMb(): number {
+      return this.$store.state.persistedState.webreader.archiveMaxMb ?? ARCHIVE_MAX_MB_DEFAULT
+    },
+    /** Whether this book's pages come out of the archive rather than the page endpoint. */
+    archiveEnabled(): boolean {
+      if (this.archiveMaxMb() <= 0) return false
       if (!this.$store.getters.meFileDownload) return false
       if (this.book.media.mediaType !== 'application/zip') return false
       return (this.book.media.mediaProfile || '').toUpperCase() === 'DIVINA'
     },
     maybeStartPreload() {
-      this.preloader?.dispose()
-      this.preloader = null
       this.archiveLoader?.dispose()
       this.archiveLoader = null
+      if (!this.archiveEnabled()) return
 
-      const maxMb = this.$store.state.persistedState.webreader.wholeArchivePreloadMaxMb ?? 0
-      if (maxMb <= 0) return
-      if (!this.archiveEligible()) return
-
-      if (this.archiveMode === 'full') {
-        this.archiveLoader = new ArchivePageLoader({
-          bookId: this.bookId,
-          versionToken: bookVersionToken(this.book),
-          fileSizeBytes: this.book.sizeBytes,
-          supportedMediaTypes: this.supportedMediaTypes,
-          pages: this.pages,
-          budgetMb: maxMb,
-          wholeFileMaxMb: this.$store.state.persistedState.webreader.archiveWholeFileMaxMb ?? 64,
-          getCurrentPage: () => this.page,
-          applyUrl: (idx, url) => this.$set(this.pages[idx], 'url', url),
-          fallbackUrl: (idx) => this.getPageUrl(this.pages[idx]),
-          $debug: this.$debug,
-        })
-        this.archiveLoader.run()
-        return
-      }
-
-      // 'preload' mode: keep serving the first pages from the server and swap in decoded
-      // pages behind it, so it is only worth it when there is enough book left to gain.
-      if (this.book.sizeBytes / 1024 / 1024 > maxMb) return
-      if (this.pagesCount - this.page < 5) return
-
-      this.preloader = new WholeArchivePreloader({
+      this.archiveLoader = new ArchivePageLoader({
         bookId: this.bookId,
+        versionToken: bookVersionToken(this.book),
+        fileSizeBytes: this.book.sizeBytes,
         supportedMediaTypes: this.supportedMediaTypes,
         pages: this.pages,
+        maxMb: this.archiveMaxMb(),
         getCurrentPage: () => this.page,
         applyUrl: (idx, url) => this.$set(this.pages[idx], 'url', url),
+        fallbackUrl: (idx) => this.getPageUrl(this.pages[idx]),
         $debug: this.$debug,
       })
-      // 让首屏 /pages 请求先打出去再发 /file
-      this.$nextTick(() => { this.preloader?.run() })
+      this.archiveLoader.run()
     },
     jumpToPrevious() {
       if (this.jumpToPreviousBook) {

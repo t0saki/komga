@@ -25,20 +25,13 @@
       "generate_api_key": "Generate API key",
       "no_keys": "No API Keys created yet"
     },
+    "archive_reading": "Read pages from the book file (memory limit)",
+    "archive_reading_disabled": "Disabled",
+    "archive_reading_hint": "Pages are decoded in your browser instead of being requested one by one from the server. Books up to this size are downloaded in a single request and kept in memory; larger books still work, they stream in pieces and keep only the pages near you.",
+    "archive_reading_requires_file_download": "Requires the File Download permission",
     "change_password": "change password",
     "details": "Details",
-    "my_account": "My Account",
-    "archive_mode": "Archive page source",
-    "archive_mode_full": "Archive only (stream and decode locally)",
-    "archive_mode_hint": "Archive only reads the central directory first, then streams pages straight out of the file — the browser never asks the server for an image. Jumping fetches the target page on its own, and downloading continues from there.",
-    "archive_mode_preload": "Preload behind server pages",
-    "archive_whole_file_hint": "Below this size the archive is fetched in a single request instead of ranges, which caches better on a CDN. Set to Never to always use range requests.",
-    "archive_whole_file_max_size": "Fetch whole archive at once below",
-    "archive_whole_file_never": "Never",
-    "preload_disabled": "Disabled",
-    "preload_hint": "Download the whole archive once when opening a book and serve pages from local memory. Reduces request count on unstable networks.",
-    "preload_max_size": "Preload whole archive (max size)",
-    "preload_requires_file_download": "Preload requires File Download permission"
+    "my_account": "My Account"
   },
   "announcements": {
     "mark_all_read": "Mark all as read",

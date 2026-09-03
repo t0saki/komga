@@ -1,6 +1,18 @@
 import {Module} from 'vuex'
 import {Theme} from '@/types/themes'
 
+/**
+ * The single knob for reading pages out of the book file. It is the memory ceiling for
+ * decoded pages, the on/off switch (0 disables), and — because being willing to hold a
+ * whole book in memory is the same as being willing to fetch it in one go — the size below
+ * which the archive is taken in a single cacheable request rather than in ranges.
+ *
+ * Read this constant instead of repeating the literal: stored state can be missing the key
+ * (a browser that predates the setting), and a fallback that has drifted from the initial
+ * state below is a bug that only shows up for those browsers.
+ */
+export const ARCHIVE_MAX_MB_DEFAULT = 500
+
 export const persistedModule: Module<any, any> = {
   state: {
     locale: '',
@@ -20,12 +32,7 @@ export const persistedModule: Module<any, any> = {
       alwaysFullscreen: false,
       animations: true,
       background: '',
-      wholeArchivePreloadMaxMb: 0,
-      // 'preload' downloads the archive and swaps pages in as they decode;
-      // 'full' serves every page out of the archive, including the first paint.
-      archiveMode: 'preload',
-      // at or below this size the archive is fetched in one plain GET (CDN friendly)
-      archiveWholeFileMaxMb: 64,
+      archiveMaxMb: ARCHIVE_MAX_MB_DEFAULT,
     },
     epubreader: {},
     browsingPageSize: undefined as unknown as number,
@@ -136,14 +143,8 @@ export const persistedModule: Module<any, any> = {
     setWebreaderBackground(state, val) {
       state.webreader.background = val
     },
-    setWebreaderPreloadMaxMb(state, val) {
-      state.webreader.wholeArchivePreloadMaxMb = val
-    },
-    setWebreaderArchiveMode(state, val) {
-      state.webreader.archiveMode = val
-    },
-    setWebreaderArchiveWholeFileMaxMb(state, val) {
-      state.webreader.archiveWholeFileMaxMb = val
+    setWebreaderArchiveMaxMb(state, val) {
+      state.webreader.archiveMaxMb = val
     },
     setEpubreaderSettings(state, val) {
       state.epubreader = val

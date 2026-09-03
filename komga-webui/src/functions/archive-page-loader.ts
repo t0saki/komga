@@ -29,10 +29,12 @@ export interface ArchivePageLoaderOpts {
   fileSizeBytes: number
   supportedMediaTypes: string[]
   pages: PageDtoWithUrl[]
-  /** blob retention budget in MB; 0 means keep everything */
-  budgetMb: number
-  /** at or below this size the archive is fetched in one plain GET instead of ranges */
-  wholeFileMaxMb: number
+  /**
+   * The reader's single archive knob, in MB: how much decoded page data may be held, and
+   * — since being willing to hold a whole book is the same as being willing to fetch it in
+   * one go — the size below which the archive is taken in one cacheable request.
+   */
+  maxMb: number
   /** 1-based, as used by the reader */
   getCurrentPage: () => number
   applyUrl: (idx: number, url: string) => void
@@ -146,7 +148,7 @@ export class ArchivePageLoader {
   }
 
   private get budgetBytes(): number {
-    return this.opts.budgetMb > 0 ? this.opts.budgetMb * MB : Infinity
+    return this.opts.maxMb > 0 ? this.opts.maxMb * MB : Infinity
   }
 
   private stopped(gen?: number): boolean {
@@ -191,7 +193,7 @@ export class ArchivePageLoader {
         return
       }
       this.anchor = Math.max(0, this.opts.getCurrentPage() - 1)
-      this.wholeMode = this.opts.fileSizeBytes > 0 && this.opts.fileSizeBytes <= this.opts.wholeFileMaxMb * MB
+      this.wholeMode = this.opts.fileSizeBytes > 0 && this.opts.fileSizeBytes <= this.opts.maxMb * MB
       // Pages the archive can never satisfy (unsupported codec needing server-side
       // conversion, or no matching entry) go straight back to the server endpoint.
       for (let i = 0; i < this.opts.pages.length; i++) {
