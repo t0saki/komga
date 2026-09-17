@@ -1,15 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import CreateEdit from './EditMetadata.vue'
+import Links from './Links.vue'
+import { mockBook } from '@/mocks/api/handlers/books'
+import { pick } from '@/functions/pick'
 
 const meta = {
-  component: CreateEdit,
+  component: Links,
   render: (args: object) => ({
-    components: { CreateEdit },
+    components: { Links },
     setup() {
       return { args }
     },
-    template: '<CreateEdit :model-value="args.modelValue" v-bind="args"/>',
+    template: '<Links v-bind="args"/>',
   }),
   parameters: {
     // More on how to position stories at: https://storybook.js.org/docs/configure/story-layout
@@ -19,8 +21,8 @@ const meta = {
       },
     },
   },
-  args: {},
-} satisfies Meta<typeof CreateEdit>
+  args: { modelValue: pick(mockBook.metadata, 'links', 'linksLock') },
+} satisfies Meta<typeof Links>
 
 export default meta
 type Story = StoryObj<typeof meta>
