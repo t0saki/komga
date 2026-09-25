@@ -4,9 +4,10 @@ name: Sync Upstream
 # upstream/master HEAD. That keeps master parked on a stable release point plus
 # this fork's own patches, so the `latest` image tag is always a stable version.
 #
-# Note: pushes made with GITHUB_TOKEN do not trigger other workflows, so the
-# image build is invoked directly here via workflow_call instead of relying on
-# the push event in ghcr.yml.
+# Pushes use the SYNC_TOKEN PAT (Contents + Workflows RW): GITHUB_TOKEN cannot
+# push commits that touch .github/workflows/, which upstream releases often do.
+# A PAT push triggers ghcr.yml via its push event, so the build job below only
+# runs for a manual force_build when nothing was merged.
 
 on:
   schedule:
@@ -33,6 +34,7 @@ jobs:
         with:
           ref: master
           fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
 
       - name: Merge latest upstream release
         id: merge
@@ -71,7 +73,7 @@ jobs:
 
   build:
     needs: sync
-    if: needs.sync.outputs.updated == 'true' || inputs.force_build
+    if: inputs.force_build && needs.sync.outputs.updated != 'true'
     uses: ./.github/workflows/ghcr.yml
     with:
       ref: master
