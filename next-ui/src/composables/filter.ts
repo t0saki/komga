@@ -21,6 +21,9 @@ import { watchImmediate } from '@vueuse/core'
 import { createOrderCompareFn } from '@/functions/sort'
 import { clearFilter, countFilter } from '@/functions/filter'
 import type { UnwrapRef } from 'vue'
+import { deepEqual } from 'fast-equals'
+
+export const QueryParamContributors = 'contributors'
 
 export function useFilterContributors() {
   // the update function for the query param
@@ -28,14 +31,14 @@ export function useFilterContributors() {
     const defaults = v.getDefaults(SchemaFilterContributors)
     const notDefault: v.InferOutput<typeof SchemaFilterContributorsRecord> = {}
     Object.entries(data).forEach(([role, value]) => {
-      if (JSON.stringify(value) !== JSON.stringify(defaults)) notDefault[role] = value
+      if (!deepEqual(value, defaults)) notDefault[role] = value
     })
     if (Object.keys(notDefault).length > 0) return JSON.stringify(notDefault)
     return undefined
   }
 
   const filterContributors = useRouteQuerySchema(
-    'contributors',
+    QueryParamContributors,
     SchemaFilterContributorsRecord,
     updateRouteFn,
   ).data
@@ -110,6 +113,11 @@ const supportedFilters = {
   mediaStatus: SchemaFilterMediaStatus,
   profile: SchemaFilterMediaProfile,
 }
+
+export type SupportedFilters = {
+  [K in keyof typeof supportedFilters]: v.InferOutput<(typeof supportedFilters)[K]>
+}
+
 type SupportedFiltersOutput = {
   [K in keyof typeof supportedFilters]: FilterValue<(typeof supportedFilters)[K]>
 }

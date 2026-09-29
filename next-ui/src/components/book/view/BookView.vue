@@ -57,10 +57,21 @@
         sm="9"
       >
         <v-container class="pa-0">
+          <div
+            v-if="display.smAndUp.value && containedIn.length > 0"
+            class="float-end"
+          >
+            <ContainerChip :containers="containedIn" />
+          </div>
+
           <v-row v-if="!book.oneshot">
             <v-col>
               <RouterLink
-                :to="{ name: '/series/[id]', params: { id: book.seriesId } }"
+                :to="{
+                  name: '/series/[id]',
+                  params: { id: book.seriesId },
+                  query: contextFilteredParam,
+                }"
                 class="text-headline-large link-underline"
                 >{{ book.seriesTitle }}</RouterLink
               >
@@ -226,6 +237,7 @@
               rounded
               label
               :text="languageDisplayNames.of(oneShotAttributes.language)"
+              :to="languageLink"
             />
             <v-chip
               v-if="oneShotAttributes.ageRating"
@@ -242,6 +254,7 @@
                   { rating: oneShotAttributes.ageRating },
                 )
               "
+              :to="ageRatingLink"
             />
             <v-chip
               v-if="oneShotAttributes.readingDirection"
@@ -264,6 +277,15 @@
         </v-col>
       </v-row>
 
+      <v-row v-if="display.xs.value && containedIn.length > 0">
+        <v-col>
+          <ContainerChip
+            :containers="containedIn"
+            small
+          />
+        </v-col>
+      </v-row>
+
       <v-row>
         <v-col>
           <SimpleDataTable :rows="tableRows" />
@@ -274,7 +296,7 @@
 </template>
 
 <script setup lang="ts">
-import { bookPosterUrl } from '@/api/images'
+import { bookPosterUrl, collectionPosterUrl, readListPosterUrl } from '@/api/images'
 import { useBookReadProgress } from '@/composables/book/useBookReadProgress'
 import { useIntl } from 'vue-intl'
 import { useBook } from '@/composables/book/useBook'
@@ -290,6 +312,20 @@ import { useImageCacheStore } from '@/stores/image-cache'
 import { languageDisplayNames } from '@/utils/i18n/locale-helper'
 import { type ReadingDirection, readingDirectionMessages } from '@/types/ReadingDirection'
 import { isMessageDescriptor } from '@/stores/messages'
+import { useQuery } from '@pinia/colada'
+import { bookReadListsQuery } from '@/colada/readlists'
+import type { Container } from '@/components/ContainerChip.vue'
+import { seriesCollectionsQuery } from '@/colada/collections'
+import { useBrowsingContext } from '@/composables/browsingContext'
+import {
+  filterBrowsingContext,
+  formatBrowsingContextAsQueryParam,
+  popBrowsingContext,
+} from '@/functions/browsing-context'
+import { commonMessages } from '@/utils/i18n/common-messages'
+import { enrichRouteQuery } from '@/functions/router'
+import type { RouteLocationObject } from '@/types/route'
+import { contributorToContributorsQuery, filterToQuery } from '@/functions/filter'
 
 const intl = useIntl()
 const display = useDisplay()
@@ -310,6 +346,107 @@ const props = defineProps<{
 const { isRead, progressPercent, pagesLeft } = useBookReadProgress(() => props.book)
 const { isDeleted, format } = useBook(() => props.book)
 
+const { context } = useBrowsingContext()
+const popped = computed(() => popBrowsingContext(context.value))
+
+// first valid context for oneshot filter navigation
+const contextOneshot = computed(() =>
+  popBrowsingContext(filterBrowsingContext(context.value, ['libraryView'])),
+)
+
+// upper context for lateral navigation
+const contextFilteredParam = computed(() =>
+  formatBrowsingContextAsQueryParam(filterBrowsingContext(context.value, ['libraryView'])),
+)
+
+const { data: readLists } = useQuery(() => ({
+  ...bookReadListsQuery({ bookId: props.book.id }),
+}))
+// for oneshots we need to retrieve collections
+const { data: collections } = useQuery(() => ({
+  ...seriesCollectionsQuery({ seriesId: props.book.seriesId }),
+}))
+const containedIn = computed(() => [
+  ...(readLists.value?.map(
+    (it) =>
+      ({
+        text: it.name,
+        subTitle: intl.formatMessage(commonMessages.containerChipSubTitleReadList),
+        imageUrl: readListPosterUrl(it.id, cacheStore.getVersion(it.id)),
+        link: {
+          name: '/readlist/[id]',
+          params: { id: it.id },
+          query: contextFilteredParam.value,
+        },
+      }) satisfies Container,
+  ) ?? []),
+  ...(collections.value?.map(
+    (it) =>
+      ({
+        text: it.name,
+        subTitle: intl.formatMessage(commonMessages.containerChipSubTitleCollection),
+        imageUrl: collectionPosterUrl(it.id, cacheStore.getVersion(it.id)),
+        link: {
+          name: '/collection/[id]',
+          params: { id: it.id },
+          query: contextFilteredParam.value,
+        },
+      }) satisfies Container,
+  ) ?? []),
+])
+
+const parentToOneShot = computed<RouteLocationObject | undefined>(() => {
+  if (!props.book.oneshot) return undefined
+  if (contextOneshot?.value?.top?.type === 'libraryView')
+    return {
+      name: '/libraries/[viewId]/series',
+      params: { viewId: contextOneshot.value.top.id },
+      query: formatBrowsingContextAsQueryParam(contextOneshot.value.remainingStack),
+    }
+})
+const parentTo = computed<RouteLocationObject | undefined>(() => {
+  if (popped.value.top?.type === 'series')
+    return {
+      name: '/series/[id]',
+      params: { id: popped.value.top.id },
+      query: formatBrowsingContextAsQueryParam(popped.value.remainingStack),
+    }
+  if (popped.value.top?.type === 'readList')
+    return {
+      name: '/readlist/[id]',
+      params: { id: popped.value.top.id },
+      query: formatBrowsingContextAsQueryParam(popped.value.remainingStack),
+    }
+  if (popped.value.top?.type == 'libraryView') {
+    return {
+      name:
+        popped.value.top.subType === 'series'
+          ? '/libraries/[viewId]/series'
+          : '/libraries/[viewId]/books',
+      params: { viewId: popped.value.top.id },
+      query: formatBrowsingContextAsQueryParam(popped.value.remainingStack),
+    }
+  }
+})
+
+const languageLink = computed(() => {
+  if (props.oneShotAttributes?.language)
+    return enrichRouteQuery(
+      parentToOneShot.value,
+      filterToQuery('language', {
+        m: 'anyOf',
+        v: [{ i: 'i', v: props.oneShotAttributes.language }],
+      }),
+    )
+})
+const ageRatingLink = computed(() => {
+  if (props.oneShotAttributes?.ageRating)
+    return enrichRouteQuery(
+      parentToOneShot.value,
+      filterToQuery('age', { is: props.oneShotAttributes.ageRating }),
+    )
+})
+
 const tableRows = computed(() => {
   const rows: TableRow[] = []
 
@@ -320,7 +457,18 @@ const tableRows = computed(() => {
         defaultMessage: 'Publisher',
         id: 'OLqBQc',
       }),
-      data: [{ text: props.oneShotAttributes.publisher }],
+      data: [
+        {
+          text: props.oneShotAttributes.publisher,
+          to: enrichRouteQuery(
+            parentToOneShot.value,
+            filterToQuery('publisher', {
+              m: 'anyOf',
+              v: [{ v: props.oneShotAttributes.publisher }],
+            }),
+          ),
+        },
+      ],
     })
 
   if (props.book.metadata.authors.length > 0)
@@ -331,7 +479,10 @@ const tableRows = computed(() => {
           header: contributorsRolesMessages?.[role]
             ? intl.formatMessage(contributorsRolesMessages?.[role])
             : role,
-          data: contributor!.map((it) => ({ text: it.name })),
+          data: contributor!.map((it) => ({
+            text: it.name,
+            to: enrichRouteQuery(parentTo.value, contributorToContributorsQuery(it)),
+          })),
         })
       })
 
@@ -342,7 +493,16 @@ const tableRows = computed(() => {
         defaultMessage: 'Genre',
         id: 'uOPuSH',
       }),
-      data: props.oneShotAttributes.genres.map((it) => ({ text: it })),
+      data: props.oneShotAttributes.genres.map((it) => ({
+        text: it,
+        to: enrichRouteQuery(
+          parentToOneShot.value,
+          filterToQuery('genre', {
+            m: 'anyOf',
+            v: [{ v: it }],
+          }),
+        ),
+      })),
     })
 
   if (props.book.metadata.tags.length > 0)
@@ -352,7 +512,10 @@ const tableRows = computed(() => {
         defaultMessage: 'Tags',
         id: 'TPX4qo',
       }),
-      data: props.book.metadata.tags.map((it) => ({ text: it })),
+      data: props.book.metadata.tags.map((it) => ({
+        text: it,
+        to: enrichRouteQuery(parentTo.value, filterToQuery('tag', { m: 'anyOf', v: [{ v: it }] })),
+      })),
     })
 
   if (props.book.metadata.links.length > 0)
@@ -372,7 +535,13 @@ const tableRows = computed(() => {
         defaultMessage: 'Sharing labels',
         id: '1z+Z+q',
       }),
-      data: props.oneShotAttributes.sharingLabels.map((it) => ({ text: it })),
+      data: props.oneShotAttributes.sharingLabels.map((it) => ({
+        text: it,
+        to: enrichRouteQuery(
+          parentToOneShot.value,
+          filterToQuery('sharingLabel', { m: 'anyOf', v: [{ v: it }] }),
+        ),
+      })),
     })
 
   if (props.book.metadata.isbn)

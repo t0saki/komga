@@ -1,29 +1,28 @@
 <template>
-  <v-app-bar>
-    <ChipCount
-      class="ms-4"
-      :count="totalElements"
-    />
+  <v-app-bar class="bg-background px-2">
+    <template #prepend>
+      <ChipCount :count="totalElements" />
+    </template>
 
-    <v-spacer />
+    <template #append>
+      <div class="d-flex ga-2">
+        <PosterSizeSlider />
 
-    <PosterSizeSlider />
+        <PageSizeSelector
+          v-if="appStore.isBrowsingPaged"
+          v-model="appStore.browsingPageSize"
+          allow-unpaged
+        />
 
-    <PageSizeSelector
-      v-if="appStore.isBrowsingPaged"
-      v-model="appStore.browsingPageSize"
-      allow-unpaged
-    />
+        <PagingSelector v-model="appStore.browsingPaging" />
 
-    <PagingSelector
-      v-model="appStore.browsingPaging"
-      class="px-2"
-    />
-
-    <FilterButton
-      :count="filterCount"
-      @click="filterDrawer = true"
-    />
+        <FilterButton
+          :count="filterCount"
+          :dot="!sortIsDefault"
+          @click="filterDrawer = true"
+        />
+      </div>
+    </template>
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
@@ -118,7 +117,14 @@
 
       <v-divider />
 
-      <v-list-subheader>{{ $formatMessage(commonMessages.filterPanelSort) }}</v-list-subheader>
+      <v-list-subheader>
+        <span>{{ $formatMessage(commonMessages.filterPanelSort) }}</span>
+        <SortRestore
+          v-if="!sortIsDefault"
+          class="position-absolute right-0 me-6"
+          @restore="sortRestore()"
+        />
+      </v-list-subheader>
 
       <SortList
         v-model="sortActive"
@@ -152,6 +158,7 @@
         :selected="isSelected"
         :pre-select="preSelect"
         :width="display.xs.value ? 'auto' : appStore.gridCardWidth"
+        :sort-active="sortActive"
         @selection="(_val, event) => toggleSelect(event as MouseEvent)"
       />
     </template>
@@ -179,24 +186,30 @@ import {
   valuesToConditions,
 } from '@/functions/filter'
 import { useInfiniteQuery, useQuery } from '@pinia/colada'
-import { PageRequest } from '@/types/PageRequest'
+import { PageRequest, type Sort } from '@/types/PageRequest'
 import { bookListQuery, bookListQueryInfinite } from '@/colada/books'
 import { commonMessages } from '@/utils/i18n/common-messages'
 import { useFilterContributors, useFilters } from '@/composables/filter'
-import ChipCount from '@/components/ChipCount.vue'
 import { contributorsRolesMessages } from '@/types/referential'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionBook } from '@/generated/openapi'
+import { BrowsingContextKey } from '@/functions/browsing-context'
+import { useSort } from '@/composables/sort'
 
 const route = useRoute('/libraries/[viewId]/books')
 const libraryViewId = route.params.viewId
 const { libraryIds } = useGetLibrariesByViewId(libraryViewId)
 
+provide(
+  BrowsingContextKey,
+  computed(() => ({ type: 'libraryView', id: libraryViewId, subType: 'books' })),
+)
+
 const display = useDisplay()
 const appStore = useAppStore()
 const { isBrowsingScroll, isBrowsingPaged } = storeToRefs(appStore)
 
-const viewName = computed(() => `${libraryViewId}_books`)
+// const viewName = computed(() => `${libraryViewId}_books`)
 
 const { page0, page1, pageCount } = usePagination()
 
@@ -222,11 +235,16 @@ const {
 } = useFilters(['mediaStatus', 'profile', 'read', 'tag', 'unavailable', 'oneshot'])
 
 const { convertSortOptionDescriptor } = useIntlFormatter()
-const sortActive = appStore.getSortActive(viewName.value, [
+const sortDefault: Sort[] = [
   { key: 'series', order: 'asc' },
   { key: 'metadata.numberSort', order: 'asc' },
-])
+]
 const sortOptions = sortBooks.map((it) => convertSortOptionDescriptor(it))
+const {
+  sortActive,
+  isDefault: sortIsDefault,
+  restore: sortRestore,
+} = useSort(sortDefault, sortOptions, true)
 
 const conds = computed(() => ({
   allOf: [

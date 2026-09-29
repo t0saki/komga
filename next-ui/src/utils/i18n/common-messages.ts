@@ -192,4 +192,39 @@ export const commonMessages = {
     defaultMessage: 'Must be a valid BCP 47 language code',
     id: 'v3beFf',
   }),
+  libraryPinned: defineMessage({
+    description: 'Library tab navigation: library selection: pinned',
+    defaultMessage: 'Pinned',
+    id: '1qIfds',
+  }),
+  libraryUnpinned: defineMessage({
+    description: 'Library tab navigation: library selection: unpinned',
+    defaultMessage: 'Unpinned',
+    id: '9oA9gw',
+  }),
+  libraryAll: defineMessage({
+    description: 'Library tab navigation: library selection: all',
+    defaultMessage: 'All',
+    id: '8/BXfN',
+  }),
+  containerChipSubTitleReadList: defineMessage({
+    description: 'Container chip, subtitle for read list',
+    defaultMessage: 'Read list',
+    id: 'Q7tJAG',
+  }),
+  containerChipSubTitleCollection: defineMessage({
+    description: 'Container chip, subtitle for collection',
+    defaultMessage: 'Collection',
+    id: 'nWgSSS',
+  }),
+  cardSubtitleNoReleaseDate:defineMessage({
+    description: 'Card subtitle: no release date',
+    defaultMessage: 'No release date',
+    id: '9mujmD',
+  }),
+  cardSubtitleUnread:defineMessage({
+    description: 'Card subtitle: unread',
+    defaultMessage: 'Unread',
+    id: 'wESuod',
+  }),
 }

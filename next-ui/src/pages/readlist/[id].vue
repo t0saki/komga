@@ -1,29 +1,8 @@
 <template>
   <v-app-bar>
-    <ChipCount
-      :count="totalElements"
-      class="ms-4"
-    />
-
-    <v-spacer />
-
-    <PosterSizeSlider />
-
-    <PageSizeSelector
-      v-if="isBrowsingPaged"
-      v-model="appStore.browsingPageSize"
-      allow-unpaged
-    />
-
-    <PagingSelector
-      v-model="appStore.browsingPaging"
-      class="px-2"
-    />
-
-    <FilterButton
-      :count="filterCount"
-      @click="filterDrawer = true"
-    />
+    <template #prepend>
+      <NavigationBreadcrumbs />
+    </template>
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
@@ -130,7 +109,10 @@
     fluid
     class="pa-0 pa-sm-4"
   >
-    <div v-if="isPending">
+    <div
+      v-if="isPending"
+      class="pa-4 pa-sm-0"
+    >
       <v-row>
         <v-col cols="3">
           <v-skeleton-loader type="image" />
@@ -151,7 +133,31 @@
     <template v-else-if="readList">
       <ReadlistView :read-list="readList" />
 
-      <v-divider />
+      <v-divider class="mb-1 mx-2" />
+
+      <div class="sticky-bar d-flex align-center pa-2">
+        <ChipCount :count="totalElements" />
+
+        <v-spacer />
+
+        <!-- Append -->
+        <div class="d-flex ga-2">
+          <PosterSizeSlider />
+
+          <PageSizeSelector
+            v-if="isBrowsingPaged"
+            v-model="appStore.browsingPageSize"
+            allow-unpaged
+          />
+
+          <PagingSelector v-model="appStore.browsingPaging" />
+
+          <FilterButton
+            :count="filterCount"
+            @click="filterDrawer = true"
+          />
+        </div>
+      </div>
 
       <EmptyStateFilterNoResults
         v-if="totalElements === 0 && filterCount > 0"
@@ -213,6 +219,8 @@ import { contributorsRolesMessages } from '@/types/referential'
 import EmptyStateNetworkError from '@/components/EmptyStateNetworkError.vue'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionBook } from '@/generated/openapi'
+import { BrowsingContextKey, pushBrowsingContext } from '@/functions/browsing-context'
+import { useBrowsingContext } from '@/composables/browsingContext'
 
 const route = useRoute('/readlist/[id]')
 const router = useRouter()
@@ -221,6 +229,12 @@ const readListId = computed(() => route.params.id)
 provide(
   filterKeys.context,
   computed(() => ({ readlist_id: [readListId.value] })),
+)
+
+const { context } = useBrowsingContext()
+provide(
+  BrowsingContextKey,
+  computed(() => pushBrowsingContext(context.value, { type: 'readList', id: readListId.value })),
 )
 
 const display = useDisplay()

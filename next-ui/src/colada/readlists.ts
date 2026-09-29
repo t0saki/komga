@@ -9,6 +9,7 @@ import { entitiesChanged, entityChanged } from '@/colada/cache'
 import { useAppStore } from '@/stores/app'
 import {
   komgaAddUserUploadedReadListThumbnail,
+  komgaGetReadListsByBookId,
   komgaCreateReadList,
   komgaDeleteReadListById,
   komgaDeleteUserUploadedReadListThumbnail,
@@ -19,6 +20,8 @@ import {
   komgaUpdateReadListById,
   type ReadListCreationDto,
   type ReadListUpdateDto,
+  komgaGetBookSiblingPreviousInReadList,
+  komgaGetBookSiblingNextInReadList,
 } from '@/generated/openapi'
 import { useImageCacheStore } from '@/stores/image-cache'
 import { STALE_TIME } from '@/types/time'
@@ -27,6 +30,8 @@ export const QUERY_KEYS_READLIST = {
   root: ['readlists'] as const,
   bySearch: (request: object) => [...QUERY_KEYS_READLIST.root, JSON.stringify(request)] as const,
   byId: (id: string) => [...QUERY_KEYS_READLIST.root, id] as const,
+  byBook: () => [...QUERY_KEYS_READLIST.root, 'byBook'] as const,
+  byBookId: (bookId: string) => [...QUERY_KEYS_READLIST.byBook(), bookId] as const,
   posters: (id: string) => [...QUERY_KEYS_READLIST.byId(id), 'posters'] as const,
 }
 
@@ -91,6 +96,43 @@ export const readListDetailQuery = defineQueryOptions(({ readListId }: { readLis
     }),
   staleTime: STALE_TIME.LONG,
 }))
+
+export const bookReadListsQuery = defineQueryOptions(({ bookId }: { bookId: string }) => ({
+  key: QUERY_KEYS_READLIST.byBookId(bookId),
+  query: () =>
+    komgaGetReadListsByBookId({
+      path: {
+        bookId: bookId,
+      },
+    }),
+  staleTime: STALE_TIME.LONG,
+}))
+
+export const bookPreviousInReadList = defineQueryOptions(
+  ({ readListId, bookId }: { readListId: string; bookId: string }) => ({
+    key: [...QUERY_KEYS_READLIST.byId(bookId), 'books', bookId, 'previous'],
+    query: () =>
+      komgaGetBookSiblingPreviousInReadList({
+        path: {
+          id: readListId,
+          bookId: bookId,
+        },
+      }),
+  }),
+)
+
+export const bookNextInReadList = defineQueryOptions(
+  ({ readListId, bookId }: { readListId: string; bookId: string }) => ({
+    key: [...QUERY_KEYS_READLIST.byId(bookId), 'books', bookId, 'next'],
+    query: () =>
+      komgaGetBookSiblingNextInReadList({
+        path: {
+          id: readListId,
+          bookId: bookId,
+        },
+      }),
+  }),
+)
 
 export const useCreateReadList = defineMutation(() => {
   const appStore = useAppStore()

@@ -1,42 +1,12 @@
 <template>
   <v-app-bar>
     <template #prepend>
-      <LibraryHeader
-        class="ms-4"
-        :library-id="series?.libraryId"
-        link
-      />
-
-      <ChipCount
-        class="ms-2"
-        :count="totalElements"
-      />
+      <NavigationBreadcrumbs />
     </template>
 
-    <PosterSizeSlider />
-
-    <PresentationSelector
-      v-if="display.smAndUp.value"
-      v-model="presentationMode"
-      :modes="['grid', 'list']"
-      toggle
-    />
-
-    <PageSizeSelector
-      v-if="isBrowsingPaged"
-      v-model="appStore.browsingPageSize"
-      allow-unpaged
-    />
-
-    <PagingSelector
-      v-model="appStore.browsingPaging"
-      class="px-2"
-    />
-
-    <FilterButton
-      :count="filterCount"
-      @click="filterDrawer = true"
-    />
+    <template #append>
+      <CollectionNavigation :series-id="seriesId" />
+    </template>
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
@@ -131,7 +101,14 @@
 
       <v-divider />
 
-      <v-list-subheader>{{ $formatMessage(commonMessages.filterPanelSort) }}</v-list-subheader>
+      <v-list-subheader>
+        <span>{{ $formatMessage(commonMessages.filterPanelSort) }}</span>
+        <SortRestore
+          v-if="!sortIsDefault"
+          class="position-absolute right-0 me-6"
+          @restore="sortRestore()"
+        />
+      </v-list-subheader>
 
       <SortList
         v-model="sortActive"
@@ -145,7 +122,10 @@
     fluid
     class="pa-0 pa-sm-4"
   >
-    <div v-if="isPending">
+    <div
+      v-if="isPending"
+      class="pa-4 pa-sm-0"
+    >
       <v-row>
         <v-col cols="3">
           <v-skeleton-loader type="image" />
@@ -166,7 +146,39 @@
     <template v-else-if="series">
       <SeriesView :series="series" />
 
-      <v-divider />
+      <v-divider class="mb-1 mx-2" />
+
+      <div class="sticky-bar d-flex align-center pa-2">
+        <ChipCount :count="totalElements" />
+
+        <v-spacer />
+
+        <!-- Append -->
+        <div class="d-flex ga-2">
+          <PosterSizeSlider />
+
+          <PresentationSelector
+            v-if="display.smAndUp.value"
+            v-model="presentationMode"
+            :modes="['grid', 'list']"
+            toggle
+          />
+
+          <PageSizeSelector
+            v-if="isBrowsingPaged"
+            v-model="appStore.browsingPageSize"
+            allow-unpaged
+          />
+
+          <PagingSelector v-model="appStore.browsingPaging" />
+
+          <FilterButton
+            :count="filterCount"
+            :dot="!sortIsDefault"
+            @click="filterDrawer = true"
+          />
+        </div>
+      </div>
 
       <EmptyStateFilterNoResults
         v-if="totalElements === 0 && filterCount > 0"
@@ -191,6 +203,7 @@
             :selected="isSelected"
             :pre-select="preSelect"
             :width="display.xs.value ? 'auto' : appStore.gridCardWidth"
+            :sort-active="sortActive"
             @selection="(_val, event) => toggleSelect(event as MouseEvent)"
           />
         </template>
@@ -200,12 +213,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useInfiniteQuery, useQuery, useQueryCache } from '@pinia/colada'
+import { useInfiniteQuery, useQuery } from '@pinia/colada'
 import EmptyStateNetworkError from '@/components/EmptyStateNetworkError.vue'
 import { filterKeys } from '@/types/filter'
 import { usePagination } from '@/composables/pagination'
 import { useSelectionStore } from '@/stores/selection'
-import { PageRequest } from '@/types/PageRequest'
+import { PageRequest, type Sort } from '@/types/PageRequest'
 import { useDisplay } from 'vuetify/framework'
 import { useAppStore } from '@/stores/app'
 import { storeToRefs } from 'pinia'
@@ -231,37 +244,9 @@ import { contributorsRolesMessages } from '@/types/referential'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionBook } from '@/generated/openapi'
 import { seriesDetailQuery } from '@/colada/series'
-import { logger } from '@/services/logtape'
-import { getFirstBookInParent } from '@/functions/book-container'
-
-// oneshot redirection
-definePage({
-  beforeEnter: async (to) => {
-    logger.debug('navigation guard: check if series is oneshot')
-    const params = to.params as { id: string }
-
-    // check cache
-    const queryCache = useQueryCache()
-    const cacheEntry = queryCache.ensure(seriesDetailQuery({ seriesId: params.id }))
-    const state = await queryCache.refresh(cacheEntry)
-    const series = state.data
-
-    if (series?.oneshot) {
-      logger.debug('navigation guard: series is oneshot, fetch book for redirection')
-      const book = await getFirstBookInParent(series, false)
-
-      if (book) {
-        logger.debug('navigation guard: book found, redirect to book page')
-        return {
-          name: '/book/[id]',
-          params: { id: book.id },
-          query: to.query,
-          replace: true,
-        }
-      }
-    }
-  },
-})
+import { BrowsingContextKey, pushBrowsingContext } from '@/functions/browsing-context'
+import { useBrowsingContext } from '@/composables/browsingContext'
+import { useSort } from '@/composables/sort'
 
 const route = useRoute('/series/[id]')
 const seriesId = computed(() => route.params.id)
@@ -269,6 +254,12 @@ const seriesId = computed(() => route.params.id)
 provide(
   filterKeys.context,
   computed(() => ({ series_id: [seriesId.value] })),
+)
+
+const { context } = useBrowsingContext()
+provide(
+  BrowsingContextKey,
+  computed(() => pushBrowsingContext(context.value, { type: 'series', id: seriesId.value })),
 )
 
 const {
@@ -296,12 +287,15 @@ function clearFilters() {
 const filterCount = computed(() => filterContributorsCount.value + filtersCountAll.value)
 
 const { convertSortOptionDescriptor } = useIntlFormatter()
-const sortActive = appStore.getSortActive(viewName.value, [
-  { key: 'metadata.numberSort', order: 'asc' },
-])
+const sortDefault: Sort[] = [{ key: 'metadata.numberSort', order: 'asc' }]
 const sortOptions = sortBooks
   .filter((it) => it.key !== 'series')
   .map((it) => convertSortOptionDescriptor(it))
+const {
+  sortActive,
+  isDefault: sortIsDefault,
+  restore: sortRestore,
+} = useSort(sortDefault, sortOptions, false)
 
 const {
   filter: filterContributors,

@@ -1,36 +1,35 @@
 <template>
-  <v-app-bar>
-    <ChipCount
-      class="ms-4"
-      :count="totalElements"
-    />
+  <v-app-bar class="bg-background px-2">
+    <template #prepend>
+      <ChipCount :count="totalElements" />
+    </template>
 
-    <v-spacer />
+    <template #append>
+      <div class="d-flex ga-2">
+        <PosterSizeSlider />
 
-    <PosterSizeSlider />
+        <PresentationSelector
+          v-if="display.smAndUp.value"
+          v-model="presentationMode"
+          :modes="['grid', 'list']"
+          toggle
+        />
 
-    <PresentationSelector
-      v-if="display.smAndUp.value"
-      v-model="presentationMode"
-      :modes="['grid', 'list']"
-      toggle
-    />
+        <PageSizeSelector
+          v-if="isBrowsingPaged"
+          v-model="appStore.browsingPageSize"
+          allow-unpaged
+        />
 
-    <PageSizeSelector
-      v-if="isBrowsingPaged"
-      v-model="appStore.browsingPageSize"
-      allow-unpaged
-    />
+        <PagingSelector v-model="appStore.browsingPaging" />
 
-    <PagingSelector
-      v-model="appStore.browsingPaging"
-      class="px-2"
-    />
-
-    <FilterButton
-      :count="filterCount"
-      @click="filterDrawer = true"
-    />
+        <FilterButton
+          :count="filterCount"
+          :dot="!sortIsDefault"
+          @click="filterDrawer = true"
+        />
+      </div>
+    </template>
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
@@ -177,7 +176,14 @@
 
       <v-divider />
 
-      <v-list-subheader>{{ $formatMessage(commonMessages.filterPanelSort) }}</v-list-subheader>
+      <v-list-subheader>
+        <span>{{ $formatMessage(commonMessages.filterPanelSort) }}</span>
+        <SortRestore
+          v-if="!sortIsDefault"
+          class="position-absolute right-0 me-6"
+          @restore="sortRestore()"
+        />
+      </v-list-subheader>
 
       <SortList
         v-model="sortActive"
@@ -210,6 +216,7 @@
         :selected="isSelected"
         :pre-select="preSelect"
         :width="display.xs.value ? 'auto' : appStore.gridCardWidth"
+        :sort-active="sortActive"
         @selection="(_val, event) => toggleSelect(event as MouseEvent)"
       />
 
@@ -230,7 +237,7 @@
 import { useInfiniteQuery, useQuery } from '@pinia/colada'
 import { seriesListQuery, seriesListQueryInfinite } from '@/colada/series'
 
-import { PageRequest } from '@/types/PageRequest'
+import { PageRequest, type Sort } from '@/types/PageRequest'
 import { useGetLibrariesByViewId } from '@/composables/libraries'
 import { useAppStore } from '@/stores/app'
 import { usePagination } from '@/composables/pagination'
@@ -258,10 +265,17 @@ import ChipCount from '@/components/ChipCount.vue'
 import { contributorsRolesMessages } from '@/types/referential'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionSeries } from '@/generated/openapi'
+import { BrowsingContextKey } from '@/functions/browsing-context'
+import { useSort } from '@/composables/sort'
 
 const route = useRoute('/libraries/[viewId]/series')
 const libraryViewId = route.params.viewId
 const { libraryIds } = useGetLibrariesByViewId(libraryViewId)
+
+provide(
+  BrowsingContextKey,
+  computed(() => ({ type: 'libraryView', id: libraryViewId, subType: 'series' })),
+)
 
 const display = useDisplay()
 const appStore = useAppStore()
@@ -308,10 +322,13 @@ const {
 ])
 
 const { convertSortOptionDescriptor } = useIntlFormatter()
-const sortActive = appStore.getSortActive(viewName.value, [
-  { key: 'metadata.titleSort', order: 'asc' },
-])
+const sortDefault: Sort[] = [{ key: 'metadata.titleSort', order: 'asc' }]
 const sortOptions = sortSeries.map((it) => convertSortOptionDescriptor(it))
+const {
+  sortActive,
+  isDefault: sortIsDefault,
+  restore: sortRestore,
+} = useSort(sortDefault, sortOptions, false)
 
 const conds = computed(() => ({
   allOf: [

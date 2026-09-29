@@ -1,36 +1,8 @@
 <template>
   <v-app-bar>
-    <ChipCount
-      :count="totalElements"
-      class="ms-4"
-    />
-
-    <v-spacer />
-
-    <PosterSizeSlider />
-
-    <PresentationSelector
-      v-if="display.smAndUp.value"
-      v-model="presentationMode"
-      :modes="['grid', 'list']"
-      toggle
-    />
-
-    <PageSizeSelector
-      v-if="isBrowsingPaged"
-      v-model="appStore.browsingPageSize"
-      allow-unpaged
-    />
-
-    <PagingSelector
-      v-model="appStore.browsingPaging"
-      class="px-2"
-    />
-
-    <FilterButton
-      :count="filterCount"
-      @click="filterDrawer = true"
-    />
+    <template #prepend>
+      <NavigationBreadcrumbs />
+    </template>
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
@@ -189,7 +161,10 @@
     fluid
     class="pa-0 pa-sm-4"
   >
-    <div v-if="isPending">
+    <div
+      v-if="isPending"
+      class="pa-4 pa-sm-0"
+    >
       <v-row>
         <v-col cols="3">
           <v-skeleton-loader type="image" />
@@ -210,7 +185,38 @@
     <template v-else-if="collection">
       <CollectionView :collection="collection" />
 
-      <v-divider />
+      <v-divider class="mb-1 mx-2" />
+
+      <div class="sticky-bar d-flex align-center pa-2">
+        <ChipCount :count="totalElements" />
+
+        <v-spacer />
+
+        <!-- Append -->
+        <div class="d-flex ga-2">
+          <PosterSizeSlider />
+
+          <PresentationSelector
+            v-if="display.smAndUp.value"
+            v-model="presentationMode"
+            :modes="['grid', 'list']"
+            toggle
+          />
+
+          <PageSizeSelector
+            v-if="isBrowsingPaged"
+            v-model="appStore.browsingPageSize"
+            allow-unpaged
+          />
+
+          <PagingSelector v-model="appStore.browsingPaging" />
+
+          <FilterButton
+            :count="filterCount"
+            @click="filterDrawer = true"
+          />
+        </div>
+      </div>
 
       <EmptyStateFilterNoResults
         v-if="totalElements === 0 && filterCount > 0"
@@ -285,6 +291,8 @@ import { contributorsRolesMessages } from '@/types/referential'
 import EmptyStateNetworkError from '@/components/EmptyStateNetworkError.vue'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionSeries } from '@/generated/openapi'
+import { useBrowsingContext } from '@/composables/browsingContext'
+import { BrowsingContextKey, pushBrowsingContext } from '@/functions/browsing-context'
 
 const route = useRoute('/collection/[id]')
 const router = useRouter()
@@ -293,6 +301,14 @@ const collectionId = computed(() => route.params.id)
 provide(
   filterKeys.context,
   computed(() => ({ collection_id: [collectionId.value] })),
+)
+
+const { context } = useBrowsingContext()
+provide(
+  BrowsingContextKey,
+  computed(() =>
+    pushBrowsingContext(context.value, { type: 'collection', id: collectionId.value }),
+  ),
 )
 
 const display = useDisplay()
