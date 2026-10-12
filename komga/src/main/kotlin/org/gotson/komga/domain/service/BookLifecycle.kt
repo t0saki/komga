@@ -32,9 +32,9 @@ import org.gotson.komga.domain.persistence.ReadProgressRepository
 import org.gotson.komga.domain.persistence.ThumbnailBookRepository
 import org.gotson.komga.infrastructure.configuration.KomgaSettingsProvider
 import org.gotson.komga.infrastructure.hash.Hasher
-import org.gotson.komga.infrastructure.hash.KoreaderHasher
 import org.gotson.komga.infrastructure.image.ImageConverter
 import org.gotson.komga.infrastructure.image.ImageType
+import org.gotson.komga.infrastructure.koreader.KoreaderHasher
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Pageable
@@ -508,11 +508,11 @@ class BookLifecycle(
             if (extension.isFixedLayout && matchingPositions.size == 1)
               matchingPositions.first()
             else
-              matchingPositions.firstOrNull { it.locations!!.progression == newProgression.locator.locations!!.progression }
+              matchingPositions.firstOrNull { it.locations!!.progression == newProgression.locator.locations.progression }
                 ?: run {
                   // no exact match
-                  val before = matchingPositions.filter { it.locations!!.progression!! < newProgression.locator.locations!!.progression!! }.maxByOrNull { it.locations!!.position!! }
-                  val after = matchingPositions.filter { it.locations!!.progression!! > newProgression.locator.locations!!.progression!! }.minByOrNull { it.locations!!.position!! }
+                  val before = matchingPositions.filter { it.locations!!.progression!! < newProgression.locator.locations.progression }.maxByOrNull { it.locations!!.position!! }
+                  val after = matchingPositions.filter { it.locations!!.progression!! > newProgression.locator.locations.progression }.minByOrNull { it.locations!!.position!! }
                   if (before == null || after == null || before.locations!!.position!! > after.locations!!.position!!)
                     throw IllegalArgumentException("Invalid progression")
                   before
@@ -533,7 +533,7 @@ class BookLifecycle(
               // if no koboSpan is provided, use the one we matched
               koboSpan = newProgression.locator.koboSpan ?: matchedPosition.koboSpan,
               // don't trust the provided total progression, the one from Kobo can be wrong
-              locations = newProgression.locator.locations?.copy(totalProgression = totalProgression),
+              locations = newProgression.locator.locations.copy(totalProgression = totalProgression),
             ),
           )
         }

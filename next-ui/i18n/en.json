@@ -1,4 +1,8 @@
 {
+  "+6DtMH": {
+    "defaultMessage": "User interface",
+    "description": "Server settings: section header for UI settings"
+  },
   "+6YDzS": {
     "defaultMessage": "No data found",
     "description": "Known Duplicate Page Table: shown when table has no data"
@@ -87,6 +91,10 @@
     "defaultMessage": "IETF BCP 47 language tag",
     "description": "Form edit series: General - language, hint"
   },
+  "0ESsC0": {
+    "defaultMessage": "Continue with {provider}",
+    "description": "Login screen: oauth2 provider login button"
+  },
   "0ILHru": {
     "defaultMessage": "OK",
     "description": "Import reading list table filter: OK"
@@ -143,6 +151,10 @@
     "defaultMessage": "Rebuild search index",
     "description": "Task name: RebuildIndex"
   },
+  "13nnQg": {
+    "defaultMessage": "Use the new NextUI as default for this server",
+    "description": "Server settings: checkbox to use NextUI as the default UI"
+  },
   "14/Uh8": {
     "defaultMessage": "Import mode",
     "description": "Import books table: bottom bar: import mode selection dropdown label"
@@ -150,6 +162,10 @@
   "18OKhZ": {
     "defaultMessage": "Find books to convert",
     "description": "Task name: FindBooksToConvert"
+  },
+  "1A8Mc1": {
+    "defaultMessage": "Notable entities",
+    "description": "Form edit book: Notable Entities"
   },
   "1E0Duw": {
     "defaultMessage": "File size",
@@ -166,6 +182,10 @@
   "1bxWGd": {
     "defaultMessage": "Edit series metadata",
     "description": "Edit series metadata dialog title"
+  },
+  "1hsKmu": {
+    "defaultMessage": "Character",
+    "description": "Notable entity kind: character"
   },
   "1qIfds": {
     "defaultMessage": "Pinned",
@@ -331,6 +351,10 @@
     "defaultMessage": "Epub",
     "description": "Form add/edit library: Scanner - file types: epub"
   },
+  "5Xt1ke": {
+    "defaultMessage": "Team",
+    "description": "Notable entity kind: team"
+  },
   "5Zw5Zt": {
     "defaultMessage": "Go to next series within collection",
     "description": "Navigation within collection: next button tootlip"
@@ -338,6 +362,10 @@
   "5b2A0u": {
     "defaultMessage": "You will be redirected to the home page",
     "description": "Page not found view: error message subtitle"
+  },
+  "5nswuX": {
+    "defaultMessage": "Open classic UI",
+    "description": "Drawer menu for webui link"
   },
   "5rziSG": {
     "defaultMessage": "Unavailable",
@@ -415,6 +443,10 @@
     "defaultMessage": "All",
     "description": "Library tab navigation: library selection: all"
   },
+  "811PxA": {
+    "defaultMessage": "or",
+    "description": "Login screen: divider between login fields and oauth2 provider list"
+  },
   "81BMAQ": {
     "defaultMessage": "Import book metadata",
     "description": "Form add/edit library: Metadata - epub book metadata"
@@ -434,6 +466,10 @@
   "8KsYYJ": {
     "defaultMessage": "Tags",
     "description": "Combobox tags: label"
+  },
+  "8LT9D4": {
+    "defaultMessage": "Cancel",
+    "description": "Metadata edition: add kind dialog - cancel button"
   },
   "8NDqor": {
     "defaultMessage": "Letterer",
@@ -518,6 +554,10 @@
   "ALGXT9": {
     "defaultMessage": "Duplicate",
     "description": "Import reading list table filter: duplicate"
+  },
+  "AMQANB": {
+    "defaultMessage": "Add Custom Kind",
+    "description": "Metadata edition: add kind dialog title"
   },
   "AeA9Ka": {
     "defaultMessage": "No restriction",
@@ -730,6 +770,10 @@
   "EIYfj+": {
     "defaultMessage": "Number",
     "description": "Book picker dialog: series books table header: number"
+  },
+  "ELl0N9": {
+    "defaultMessage": "Books with missing posters can now be filtered directly in the main library view.",
+    "description": "Missing posters: text"
   },
   "ELttw/": {
     "defaultMessage": "Empty trash",
@@ -967,6 +1011,10 @@
     "defaultMessage": "Status",
     "description": "Import reading list table header: status message"
   },
+  "J8l62K": {
+    "defaultMessage": "Add",
+    "description": "Metadata edition: add kind dialog - add button"
+  },
   "J8rAqm": {
     "defaultMessage": "Release year",
     "description": "Sort label: booksMetadata.releaseDate"
@@ -1006,6 +1054,10 @@
   "KBLD9U": {
     "defaultMessage": "Age rating",
     "description": "Filter by age rating: select placeholder"
+  },
+  "KTifVk": {
+    "defaultMessage": "All notable entities",
+    "description": "Notable entity filter: any kind"
   },
   "Kie8HQ": {
     "defaultMessage": "Book",
@@ -1279,6 +1331,10 @@
     "defaultMessage": "Year rating",
     "description": "Filter by release year: select placeholder"
   },
+  "S9SjlA": {
+    "defaultMessage": "Selected",
+    "description": "Poster filter: subheader for selected section"
+  },
   "SIfmpC": {
     "defaultMessage": "Select series",
     "description": "Series picker dialog: title"
@@ -1422,6 +1478,10 @@
   "V3wgcu": {
     "defaultMessage": "Duplicate page",
     "description": "Duplicate Page Hash Matches Table: alt description for thumbnail"
+  },
+  "V8tkJa": {
+    "defaultMessage": "Automatic OAuth2 login",
+    "description": "Server settings: checkbox to set automatic OAuth2 login"
   },
   "VHe28r": {
     "defaultMessage": "Date updated",
@@ -1619,9 +1679,17 @@
     "defaultMessage": "Edit collection",
     "description": "Edit collection dialog title"
   },
+  "YaCWYs": {
+    "defaultMessage": "Media analysis has moved",
+    "description": "Media analysis: title"
+  },
   "YbkrN9": {
     "defaultMessage": "IP",
     "description": "Authentication Activity table header: IP address"
+  },
+  "YeFgyc": {
+    "defaultMessage": "Books in error can now be filtered directly in the main library view.",
+    "description": "Media analysis: text"
   },
   "YeUvoE": {
     "defaultMessage": "Custom role...",
@@ -1678,6 +1746,10 @@
   "Zh8AOV": {
     "defaultMessage": "Edit User",
     "description": "Edit user dialog title"
+  },
+  "ZiTv+F": {
+    "defaultMessage": "Missing posters has moved",
+    "description": "Missing posters: title"
   },
   "ZnjyI3": {
     "defaultMessage": "Show less",
@@ -1923,6 +1995,10 @@
     "defaultMessage": "Book",
     "description": "Duplicate Page Hash Matches Table header: book file name"
   },
+  "bRAV2F": {
+    "defaultMessage": "Location",
+    "description": "Notable entity kind: location"
+  },
   "bRxSgh": {
     "defaultMessage": "Manually",
     "description": "Form edit read list: General - books ordering: manually"
@@ -1930,6 +2006,10 @@
   "bSoeY6": {
     "defaultMessage": "Destination name",
     "description": "Import books table header: destination name"
+  },
+  "bWiqyw": {
+    "defaultMessage": "Kind name",
+    "description": "Metadata edition: add kind dialog - input field label"
   },
   "bk1tX8": {
     "defaultMessage": "The library will be deleted from this server.<ul><li>Series and books will be deleted, along with their metadata and read progress.</li><li>Media files will not be deleted from disk.</li></ul><b>This action cannot be undone.</b>",
@@ -2519,9 +2599,17 @@
     "defaultMessage": "Analyze",
     "description": "Library analyze dialog: confirm button"
   },
+  "jYOsNC": {
+    "defaultMessage": "Unselected",
+    "description": "Poster filter: subheader for unselected section"
+  },
   "jeXb2z": {
     "defaultMessage": "Media type",
     "description": "Book info: media type"
+  },
+  "jm9oYh": {
+    "defaultMessage": "Any type",
+    "description": "Poster type - any type"
   },
   "jnjpZy": {
     "defaultMessage": "Local file",
@@ -2614,6 +2702,10 @@
   "lFTdQ+": {
     "defaultMessage": "Mark as",
     "description": "Unknown Duplicate Page: selection action button"
+  },
+  "lFWPpj": {
+    "defaultMessage": "Add kind",
+    "description": "Metadata edition: add kind button"
   },
   "lPZ5hy": {
     "defaultMessage": "Close",
@@ -2883,6 +2975,10 @@
     "defaultMessage": "{rating}+",
     "description": "Series view: age rating chip"
   },
+  "roy9ap": {
+    "defaultMessage": "Works only if a single OAuth2 provider is configured",
+    "description": "Server settings: checkbox to set automatic OAuth2 login - information tooltip"
+  },
   "rrF/Z2": {
     "defaultMessage": "Name",
     "description": "Import reading list: bottom bar: reading list name"
@@ -2910,6 +3006,10 @@
   "sGsWvI": {
     "defaultMessage": "Change password",
     "description": "User details screen: change password button"
+  },
+  "sMmke1": {
+    "defaultMessage": "Notable entities",
+    "description": "Filter panel sub-section: Notable entities"
   },
   "sNSGMQ": {
     "defaultMessage": "Drag and drop images here",
@@ -2950,6 +3050,10 @@
   "so1P5Y": {
     "defaultMessage": "Refresh book local artwork",
     "description": "Task name: RefreshBookLocalArtwork"
+  },
+  "sutqn3": {
+    "defaultMessage": "Custom kind...",
+    "description": "Metadata edition: add kind menu - custom kind"
   },
   "syF0Ap": {
     "defaultMessage": "Size",
@@ -3075,6 +3179,10 @@
     "defaultMessage": "Delete file",
     "description": "Book menu: manage > delete file"
   },
+  "viKuRl": {
+    "defaultMessage": "Poster",
+    "description": "Filter panel: Poster"
+  },
   "vkeTYG": {
     "defaultMessage": "Book import failed",
     "description": "Book imported notification: import failure: title"
@@ -3198,6 +3306,10 @@
   "yrE0Rx": {
     "defaultMessage": "Details",
     "description": "Book picker dialog: series books table header: book details"
+  },
+  "yxnX5k": {
+    "defaultMessage": "Hide login fields if OAuth2 is enabled",
+    "description": "Server settings: checkbox to hide login fields if OAuth2 is enabled"
   },
   "yyAGH1": {
     "defaultMessage": "w: {width}, h: {height}",
