@@ -13,7 +13,6 @@ import {
   useMarkBookUnread,
   useRefreshMetadataBook,
 } from '@/colada/books'
-import { useEditBookMetadataDialog } from '@/composables/book/useEditBookMetadataDialog'
 import { bookFileUrl } from '@/api/files'
 import { type Action, actionDetails, ActionName } from '@/types/action/action'
 import { useBook } from '@/composables/book/useBook'
@@ -22,6 +21,9 @@ import { bookReaderUrl } from '@/api/links'
 import type { BookDto } from '@/generated/openapi'
 import { useAddToReadListDialog } from '@/composables/book/useAddToReadListDialog'
 import { useAddToCollectionDialog } from '@/composables/series/useAddToCollectionDialog'
+import { BrowsingContextKey, popBrowsingContext } from '@/functions/browsing-context'
+import { useRemoveFromReadList } from '@/composables/book/useRemoveFromReadList'
+import { useEditDialog } from '@/composables/entity/useEditDialog'
 
 export function useBookActions(
   book: MaybeRefOrGetter<BookDto>,
@@ -34,6 +36,13 @@ export function useBookActions(
   const display = useDisplay()
   const { canRead, isEpubReader } = useBook(book)
   const { inProgress } = useBookReadProgress(book)
+
+  // browsing context
+  const context = inject(BrowsingContextKey, undefined)
+  const contextReadListId = computed(() => {
+    const top = popBrowsingContext(toValue(context))?.top
+    if (top?.type === 'readList') return top.id
+  })
 
   const actions = computed<Action<ActionName>[]>(() => [
     ...(isAdmin.value && toValue(book).oneshot
@@ -58,6 +67,19 @@ export function useBookActions(
               (addToReadListActivator.value = event.currentTarget as Element),
             onClick: () => {
               addToReadList(() => callback(ActionName.AddToReadList))
+            },
+          },
+        ]
+      : []),
+    ...(isAdmin.value && contextReadListId.value
+      ? [
+          {
+            title: intl.formatMessage(actionDetails[ActionName.RemoveFromReadList].message),
+            action: ActionName.RemoveFromReadList,
+            onMouseenter: (event: Event) =>
+              (removeFromReadListActivator.value = event.currentTarget as Element),
+            onClick: () => {
+              removeFromReadList(() => callback(ActionName.RemoveFromReadList))
             },
           },
         ]
@@ -101,13 +123,13 @@ export function useBookActions(
     ...(isAdmin.value
       ? [
           {
-            title: intl.formatMessage(actionDetails[ActionName.EditBook].message),
-            icon: actionDetails[ActionName.EditBook].icon,
-            action: ActionName.EditBook,
+            title: intl.formatMessage(actionDetails[ActionName.EditEntity].message),
+            icon: actionDetails[ActionName.EditEntity].icon,
+            action: ActionName.EditEntity,
             onMouseenter: (event: Event) =>
               (editMetadataActivator.value = event.currentTarget as Element),
             onClick: () => {
-              updateBookMetadata(() => callback(ActionName.EditBook))
+              updateBookMetadata(() => callback(ActionName.EditEntity))
             },
           },
         ]
@@ -202,12 +224,22 @@ export function useBookActions(
   }
   //endregion
 
+  //region Remove from read list
+  const { prepareDialog: showRemoveFromReadListDialog, activator: removeFromReadListActivator } =
+    useRemoveFromReadList()
+
+  function removeFromReadList(callback: () => void) {
+    if (contextReadListId.value)
+      void showRemoveFromReadListDialog([toValue(book)], contextReadListId.value, callback)
+  }
+  //endregion
+
   //region Update Book metadata
   const { prepareDialog: showEditBookMetadataDialog, activator: editMetadataActivator } =
-    useEditBookMetadataDialog()
+    useEditDialog()
 
   function updateBookMetadata(callback: () => void) {
-    showEditBookMetadataDialog(toValue(book), callback)
+    void showEditBookMetadataDialog([toValue(book)], callback)
   }
   //endregion
 

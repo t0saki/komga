@@ -44,11 +44,12 @@ const main = [
   ActionName.MarkRead,
   ActionName.MarkUnread,
   ActionName.AddToCollection,
+  ActionName.RemoveFromCollection,
   ActionName.AddToReadList,
   ActionName.Download,
 ] as ActionName[]
 const management = [
-  ActionName.EditSeries,
+  ActionName.EditEntity,
   ActionName.RefreshMetadata,
   ActionName.Analyze,
   ActionName.Delete,

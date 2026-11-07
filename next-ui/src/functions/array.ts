@@ -1,3 +1,5 @@
+import { deepEqual } from 'fast-equals'
+
 /**
  * Returns the intersection of multiple arrays.
  * Uses Generics <T> to preserve the type of the array elements.
@@ -63,4 +65,107 @@ export function findAdjacent<T>(
   }
 
   return array[adjacentIndex]
+}
+
+/**
+ * Compares two arrays for set equality (ignoring order).
+ * Supports comparing arrays of different types (e.g., T[] vs U[]) using key selectors.
+ */
+export function isSameSet<T, U = T, K = unknown>(
+  arrA: readonly T[],
+  arrB: readonly U[],
+  keySelectorA?: (item: T) => K,
+  keySelectorB?: (item: U) => K,
+): boolean {
+  if (arrA.length !== arrB.length) return false
+
+  const selectA = keySelectorA ?? ((item) => item as unknown as K)
+  const selectB = keySelectorB ?? ((item) => item as unknown as K)
+
+  const setA = new Set(arrA.map(selectA))
+  const setB = new Set(arrB.map(selectB))
+
+  if (setA.size !== setB.size) return false
+
+  return setA.values().every((key) => setB.has(key))
+}
+
+/**
+ * Count occurrences of elements across multiple arrays.
+ * @param arrays
+ */
+export function countAllOccurrences<T>(...arrays: T[][]): Map<T, number> {
+  const entries: { item: T; count: number }[] = []
+
+  for (const array of arrays) {
+    for (const item of array) {
+      const entry = entries.find((e) => deepEqual(e.item, item))
+
+      if (entry) {
+        entry.count += 1
+      } else {
+        entries.push({ item, count: 1 })
+      }
+    }
+  }
+
+  const counts = new Map<T, number>()
+  for (const { item, count } of entries) {
+    counts.set(item, count)
+  }
+
+  return counts
+}
+
+/**
+ * Extracts element types from either `T[]` or `T`.
+ */
+export type UnwrappedElement<T> = T extends (infer U)[]
+  ? UnwrappedElement<U>
+  : T extends undefined
+    ? null
+    : T extends null
+      ? null
+      : Exclude<T, undefined> | (undefined extends T ? null : never)
+
+/**
+ * Helper to flatten single values or arrays into a single flat array.
+ */
+export function extractFlatValues<E, K extends keyof E>(
+  entities: E[],
+  key: K,
+): (UnwrappedElement<E[K]> | null)[] {
+  type ItemType = UnwrappedElement<E[K]> | null
+  const result: ItemType[] = []
+
+  for (const entity of entities) {
+    const val = entity[key]
+    if (val === undefined || val === null) result.push(null)
+    else if (Array.isArray(val)) {
+      for (const item of val) {
+        if (item !== undefined && item !== null) {
+          result.push(item as ItemType)
+        }
+      }
+    } else {
+      result.push(val as ItemType)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Check whether boolean values in an array are all set or not.
+ * @param elements
+ */
+export function getBooleanArrayState(elements: boolean[]): 'all' | 'none' | 'some' {
+  if (elements.length === 0) return 'none'
+
+  const hasTrue = elements.some((it) => it)
+  const hasFalse = elements.some((it) => !it)
+
+  if (hasTrue && !hasFalse) return 'all'
+  if (!hasTrue) return 'none'
+  return 'some'
 }

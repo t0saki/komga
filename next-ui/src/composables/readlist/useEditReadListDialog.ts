@@ -13,8 +13,8 @@ import {
   useUpdateReadList,
 } from '@/colada/readlists'
 import type { ReadListDto } from '@/generated/openapi'
-import { createEntityUpdate, type EntityUpdate } from '@/functions/poster'
-import { pick } from '@/functions/pick'
+import { createEntityUpdate, type EntityUpdate } from '@/types/entityUpdate'
+import { pick } from '@/functions/object'
 
 export function useEditReadListDialog() {
   const { confirmEdit: dialogConfirmEdit } = storeToRefs(useDialogsStore())
@@ -22,6 +22,9 @@ export function useEditReadListDialog() {
   const display = useDisplay()
   const messagesStore = useMessagesStore()
   const { mutateAsync: mutateUpdate } = useUpdateReadList()
+  const { mutateAsync: mutateAddPoster } = useAddReadListPoster()
+  const { mutateAsync: mutateMarkPosterSelected } = useMarkReadListPosterSelected()
+  const { mutateAsync: mutateDeletePoster } = useDeleteReadListPoster()
 
   const prepareDialog = (readList: ReadListDto, callback: () => void = () => {}) => {
     dialogConfirmEdit.value.dialogProps = {
@@ -39,8 +42,10 @@ export function useEditReadListDialog() {
       scrollable: true,
       fullscreen: display.xs.value,
     }
-    dialogConfirmEdit.value.slot = {
-      component: markRaw(EditReadList),
+    dialogConfirmEdit.value.slots = {
+      default: {
+        component: markRaw(EditReadList),
+      },
     }
     dialogConfirmEdit.value.record = createEntityUpdate(readList)
     dialogConfirmEdit.value.callback = async (
@@ -59,9 +64,8 @@ export function useEditReadListDialog() {
 
       // upload new posters
       if (updatedData.uploadQueue.length > 0) {
-        const { mutateAsync } = useAddReadListPoster()
         for (const newPoster of updatedData.uploadQueue) {
-          await mutateAsync({
+          await mutateAddPoster({
             readListId: updatedData.entity.id,
             file: newPoster.file,
             selected: newPoster.selected,
@@ -73,8 +77,7 @@ export function useEditReadListDialog() {
 
       // mark existing poster as selected
       if (updatedData.selected) {
-        const { mutateAsync } = useMarkReadListPosterSelected()
-        await mutateAsync({
+        await mutateMarkPosterSelected({
           readListId: updatedData.entity.id,
           thumbnailId: updatedData.selected.id,
         }).catch((error) => {
@@ -84,9 +87,8 @@ export function useEditReadListDialog() {
 
       // delete posters
       if (updatedData.deleteQueue.length > 0) {
-        const { mutateAsync } = useDeleteReadListPoster()
         for (const posterToDelete of updatedData.deleteQueue) {
-          await mutateAsync({
+          await mutateDeletePoster({
             readListId: updatedData.entity.id,
             thumbnailId: posterToDelete.id,
           }).catch((error) => {

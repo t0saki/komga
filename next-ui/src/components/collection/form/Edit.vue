@@ -7,7 +7,6 @@
       <v-tab
         :value="item.value"
         :text="item.text"
-        rounded="0"
       >
         <template #append>
           <v-badge
@@ -42,10 +41,10 @@
 
 <script setup lang="ts">
 import type { CollectionDto } from '@/generated/openapi'
-import type { EntityUpdate } from '@/functions/poster'
 import { useQuery } from '@pinia/colada'
 import { collectionPostersQuery } from '@/colada/collections'
 import { useIntl } from 'vue-intl'
+import type { EntityUpdate } from '@/types/entityUpdate'
 
 const intl = useIntl()
 

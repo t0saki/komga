@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { useDisplay } from 'vuetify'
 import type { PresentationMode } from '@/types/libraries'
 import type { PageSize, Paging } from '@/types/page'
-import type { Sort } from '@/types/PageRequest'
 
 export const useAppStore = defineStore(
   'app',
@@ -13,6 +12,7 @@ export const useAppStore = defineStore(
     const rememberMe = ref(false)
     const importBooksPath = ref('')
     const browsingPageSize = ref<PageSize>(20)
+    const stretchPoster = ref(true)
 
     const browsingPaging = ref<Paging>('scroll')
     const isBrowsingPaged = computed(() => browsingPaging.value === 'paged')
@@ -35,23 +35,6 @@ export const useAppStore = defineStore(
       })
     }
 
-    /**
-     * Store the sort order per view.
-     * Use the getter to ensure a default value is always set.
-     */
-    const sortActive = ref<Record<string, Sort[]>>({})
-    const getSortActive = (key: string, defaultValue: Sort[]) => {
-      return computed({
-        get: () => {
-          if (!sortActive.value[key]) sortActive.value[key] = structuredClone(defaultValue)
-          return sortActive.value[key]
-        },
-        set: (value) => {
-          sortActive.value[key] = value
-        },
-      })
-    }
-
     const gridCardWidth = ref(150)
 
     // transient
@@ -63,6 +46,7 @@ export const useAppStore = defineStore(
       theme,
       rememberMe,
       importBooksPath,
+      stretchPoster,
       browsingPageSize,
       browsingPaging,
       gridCardWidth,
@@ -71,7 +55,6 @@ export const useAppStore = defineStore(
       isBrowsingPaged,
       isBrowsingScroll,
       getPresentationMode,
-      getSortActive,
     }
   },
   {
@@ -83,10 +66,10 @@ export const useAppStore = defineStore(
         'theme',
         'rememberMe',
         'importBooksPath',
+        'stretchPoster',
         'browsingPageSize',
         'browsingPaging',
         'presentationMode',
-        'sortActive',
         'gridCardWidth',
       ],
     },

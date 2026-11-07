@@ -13,8 +13,8 @@ import {
   useUpdateCollection,
 } from '@/colada/collections'
 import type { CollectionDto } from '@/generated/openapi'
-import { pick } from '@/functions/pick'
-import { createEntityUpdate, type EntityUpdate } from '@/functions/poster'
+import { createEntityUpdate, type EntityUpdate } from '@/types/entityUpdate'
+import { pick } from '@/functions/object'
 
 export function useEditCollectionDialog() {
   const { confirmEdit: dialogConfirmEdit } = storeToRefs(useDialogsStore())
@@ -22,6 +22,9 @@ export function useEditCollectionDialog() {
   const display = useDisplay()
   const messagesStore = useMessagesStore()
   const { mutateAsync: mutateUpdateCollection } = useUpdateCollection()
+  const { mutateAsync: mutateAddPoster } = useAddCollectionPoster()
+  const { mutateAsync: mutateMarkPosterSelected } = useMarkCollectionPosterSelected()
+  const { mutateAsync: mutateDeletePoster } = useDeleteCollectionPoster()
 
   const prepareDialog = (collection: CollectionDto, callback: () => void = () => {}) => {
     dialogConfirmEdit.value.dialogProps = {
@@ -39,8 +42,10 @@ export function useEditCollectionDialog() {
       scrollable: true,
       fullscreen: display.xs.value,
     }
-    dialogConfirmEdit.value.slot = {
-      component: markRaw(EditCollection),
+    dialogConfirmEdit.value.slots = {
+      default: {
+        component: markRaw(EditCollection),
+      },
     }
     dialogConfirmEdit.value.record = createEntityUpdate(collection)
     dialogConfirmEdit.value.callback = async (
@@ -59,9 +64,8 @@ export function useEditCollectionDialog() {
 
       // upload new posters
       if (updatedData.uploadQueue.length > 0) {
-        const { mutateAsync } = useAddCollectionPoster()
         for (const newPoster of updatedData.uploadQueue) {
-          await mutateAsync({
+          await mutateAddPoster({
             collectionId: updatedData.entity.id,
             file: newPoster.file,
             selected: newPoster.selected,
@@ -73,8 +77,7 @@ export function useEditCollectionDialog() {
 
       // mark existing poster as selected
       if (updatedData.selected) {
-        const { mutateAsync } = useMarkCollectionPosterSelected()
-        await mutateAsync({
+        await mutateMarkPosterSelected({
           collectionId: updatedData.entity.id,
           thumbnailId: updatedData.selected.id,
         }).catch((error) => {
@@ -84,9 +87,8 @@ export function useEditCollectionDialog() {
 
       // delete posters
       if (updatedData.deleteQueue.length > 0) {
-        const { mutateAsync } = useDeleteCollectionPoster()
         for (const posterToDelete of updatedData.deleteQueue) {
-          await mutateAsync({
+          await mutateDeletePoster({
             collectionId: updatedData.entity.id,
             thumbnailId: posterToDelete.id,
           }).catch((error) => {

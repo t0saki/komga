@@ -10,137 +10,16 @@
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
+    <FilterPanel
+      v-model="filters"
+      :count="filtersCountAll"
+      tags-include="BOOK"
+      @clear="filtersClearAll()"
+    />
+
+    <v-divider />
+
     <v-list>
-      <v-list-subheader>
-        <div class="d-flex ga-2 align-center mb-1">
-          <span>{{ $formatMessage(commonMessages.filterPanelHeader) }}</span>
-          <FilterChipCount
-            :count="filterCount"
-            @clear="clearFilters()"
-          />
-        </div>
-      </v-list-subheader>
-
-      <FilterByReadStatus
-        v-model="filters.read.filter.v"
-        class="py-0"
-      />
-
-      <v-list class="py-0">
-        <FilterByOneShot v-model="filters.oneshot.filter" />
-        <FilterByUnavailable v-model="filters.unavailable.filter" />
-      </v-list>
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelMediaProfile)"
-          :count="filters.profile.count"
-          @clear="filters.profile.clear()"
-        >
-          <FilterByMediaProfile v-model="filters.profile.filter.v" />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelMediaStatus)"
-          :count="filters.mediaStatus.count"
-          @clear="filters.mediaStatus.clear()"
-        >
-          <FilterByMediaStatus v-model="filters.mediaStatus.filter.v" />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelTag)"
-          :count="filters.tag.count"
-          @clear="filters.tag.clear()"
-        >
-          <FilterByTag
-            v-model="filters.tag.filter.v"
-            v-model:mode="filters.tag.filter.m"
-            include="BOOK"
-          />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelPoster)"
-          :count="filters.poster.count"
-          @clear="filters.poster.clear()"
-        >
-          <FilterByPoster v-model="filters.poster.filter.v" />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider>
-        <span class="text-body-medium text-medium-emphasis">{{
-          $formatMessage(commonMessages.filterPanelContributors)
-        }}</span>
-      </v-divider>
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          v-for="(filterContributor, role) in filterContributors"
-          :key="role"
-          :title="
-            contributorsRolesMessages?.[role]
-              ? $formatMessage(contributorsRolesMessages?.[role])
-              : role
-          "
-          :count="countFilter(filterContributor)"
-          @clear="filterContributorsClear(role)"
-        >
-          <FilterByContributor
-            v-model="filterContributor.v"
-            v-model:mode="filterContributor.m"
-            :role="role"
-          />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider>
-        <span class="text-body-medium text-medium-emphasis">{{
-          $formatMessage(commonMessages.filterPanelNotableEntities)
-        }}</span>
-      </v-divider>
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          v-for="(filterNotableEntity, kind) in filterNotableEntities"
-          :key="kind"
-          :title="
-            notableEntitiesKindsMessages?.[kind]
-              ? $formatMessage(notableEntitiesKindsMessages?.[kind])
-              : kind
-          "
-          :count="countFilter(filterNotableEntity)"
-          @clear="filterNotableEntitiesClear(kind)"
-        >
-          <FilterByNotableEntity
-            v-model="filterNotableEntity.v"
-            v-model:mode="filterNotableEntity.m"
-            :kind="kind"
-          />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider />
-
       <v-list-subheader>
         <span>{{ $formatMessage(commonMessages.filterPanelSort) }}</span>
         <SortRestore
@@ -213,7 +92,7 @@
           <PagingSelector v-model="appStore.browsingPaging" />
 
           <FilterButton
-            :count="filterCount"
+            :count="filtersCountAll"
             :dot="!sortIsDefault"
             @click="filterDrawer = true"
           />
@@ -221,8 +100,8 @@
       </div>
 
       <EmptyStateFilterNoResults
-        v-if="totalElements === 0 && filterCount > 0"
-        @reset="clearFilters()"
+        v-if="totalElements === 0 && filtersCountAll > 0"
+        @reset="filtersClearAll()"
       />
 
       <ItemBrowser
@@ -265,18 +144,8 @@ import { storeToRefs } from 'pinia'
 import { usePresentationMode } from '@/composables/presentationMode'
 import { useIntlFormatter } from '@/composables/intlFormatter'
 import { sortBooks } from '@/types/sort'
-import { useFilterContributors, useFilterNotableEntities, useFilters } from '@/composables/filter'
-import {
-  countFilter,
-  schemaFilterContributorsToConditions,
-  schemaFilterIncludeExcludeToConditions,
-  schemaFilterNotableEntitiesToConditions,
-  schemaFilterPosterToConditions,
-  schemaFilterReadStatusToConditions,
-  schemaFilterStringToConditions,
-  valuesToConditions,
-} from '@/functions/filter'
-
+import { useFilters } from '@/composables/filter'
+import { filtersToConditions, valuesToConditions } from '@/functions/filter'
 import { bookListQuery, bookListQueryInfinite } from '@/colada/books'
 import FilterButton from '@/components/filter/FilterButton.vue'
 import ChipCount from '@/components/ChipCount.vue'
@@ -286,10 +155,8 @@ import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionBook } from '@/generated/openapi'
 import { seriesDetailQuery } from '@/colada/series'
 import { BrowsingContextKey, pushBrowsingContext } from '@/functions/browsing-context'
-import { useBrowsingContext } from '@/composables/browsingContext'
+import { useBrowsingContextFromRouteQuery } from '@/composables/browsingContext'
 import { useSort } from '@/composables/sort'
-import { contributorsRolesMessages } from '@/types/referential/contributor'
-import { notableEntitiesKindsMessages } from '@/types/referential/notableEntity'
 
 const route = useRoute('/series/[id]')
 const seriesId = computed(() => route.params.id)
@@ -297,7 +164,7 @@ const seriesId = computed(() => route.params.id)
 const filterContext = computed(() => ({ series_id: [seriesId.value] }))
 provide(filterKeys.context, filterContext)
 
-const { context } = useBrowsingContext()
+const { context } = useBrowsingContextFromRouteQuery()
 provide(
   BrowsingContextKey,
   computed(() => pushBrowsingContext(context.value, { type: 'series', id: seriesId.value })),
@@ -320,16 +187,6 @@ const { page0, page1, pageCount } = usePagination()
 
 const selectionStore = useSelectionStore()
 
-function clearFilters() {
-  filterContributorsClearAll()
-  filterNotableEntitiesClearAll()
-  filtersClearAll()
-}
-
-const filterCount = computed(
-  () => filterContributorsCount.value + filterNotableEntitiesCount.value + filtersCountAll.value,
-)
-
 const { convertSortOptionDescriptor } = useIntlFormatter()
 const sortDefault: Sort[] = [{ key: 'metadata.numberSort', order: 'asc' }]
 const sortOptions = sortBooks
@@ -338,44 +195,41 @@ const sortOptions = sortBooks
 const {
   sortActive,
   isDefault: sortIsDefault,
-  restore: sortRestore,
-} = useSort(sortDefault, sortOptions, false)
+  restoreDefault: sortRestore,
+} = useSort({
+  defaultSort: sortDefault,
+  options: sortOptions,
+  persist: true,
+  viewName: viewName.value,
+})
 
-const {
-  filter: filterContributors,
-  countAll: filterContributorsCount,
-  clearAll: filterContributorsClearAll,
-  clear: filterContributorsClear,
-} = useFilterContributors(filterContext)
-const {
-  filter: filterNotableEntities,
-  countAll: filterNotableEntitiesCount,
-  clearAll: filterNotableEntitiesClearAll,
-  clear: filterNotableEntitiesClear,
-} = useFilterNotableEntities(filterContext)
 const {
   filters,
   clearAll: filtersClearAll,
   countAll: filtersCountAll,
-} = useFilters(['mediaStatus', 'profile', 'read', 'tag', 'unavailable', 'oneshot', 'poster'])
+} = useFilters(
+  [
+    'mediaStatus',
+    'profile',
+    'read',
+    'tag',
+    'unavailable',
+    'oneshot',
+    'poster',
+    'contributors',
+    'notableEntities',
+  ],
+  {
+    viewName: viewName.value,
+    persist: true,
+  },
+)
 
 const conds = computed(() => ({
   allOf: [
     valuesToConditions([seriesId.value], 'seriesId'),
-    schemaFilterIncludeExcludeToConditions(filters.value.unavailable.filter, 'deleted'),
-    schemaFilterIncludeExcludeToConditions(filters.value.oneshot.filter, 'oneShot'),
-    schemaFilterReadStatusToConditions(filters.value.read.filter),
-    schemaFilterPosterToConditions(filters.value.poster.filter),
-    valuesToConditions(filters.value.mediaStatus.filter.v, 'mediaStatus'),
-    valuesToConditions(filters.value.profile.filter.v, 'mediaProfile'),
-    schemaFilterStringToConditions(filters.value.tag.filter, 'tag', true),
-    ...Object.entries(filterContributors.value).map(([role, filter]) =>
-      schemaFilterContributorsToConditions(filter, role),
-    ),
-    ...Object.entries(filterNotableEntities.value).map(([kind, filter]) =>
-      schemaFilterNotableEntitiesToConditions(filter, kind),
-    ),
-  ].filter(Boolean) as SearchConditionBook[],
+    ...filtersToConditions(filters),
+  ] as SearchConditionBook[],
 }))
 
 // clear selection if filter or paging changes
@@ -423,16 +277,7 @@ const totalElements = computed(() =>
 const filterDrawer = ref(false)
 
 useSelectionContextualActions(dataItems)
-
-// shared model for all the expansion-panels, so only 1 is opened at the same time
-const filterExpansionPanels = ref()
 </script>
-
-<style lang="scss">
-.no-padding .v-expansion-panel-text__wrapper {
-  padding: 0 4px;
-}
-</style>
 
 <route lang="yaml">
 meta:

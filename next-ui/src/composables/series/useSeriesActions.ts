@@ -13,7 +13,6 @@ import {
 } from '@/colada/series'
 import { useCurrentUser } from '@/colada/users'
 import SeriesDeletionWarning from '@/components/series/DeletionWarning.vue'
-import { useEditSeriesMetadataDialog } from '@/composables/series/useEditSeriesMetadataDialog'
 import { seriesFileUrl } from '@/api/files'
 import { type Action, actionDetails, ActionName } from '@/types/action/action'
 import { useBooks } from '@/composables/book/useBooks'
@@ -21,6 +20,9 @@ import { useSeries } from '@/composables/series/useSeries'
 import type { SeriesDto } from '@/generated/openapi'
 import { useAddToReadListDialog } from '@/composables/book/useAddToReadListDialog'
 import { useAddToCollectionDialog } from '@/composables/series/useAddToCollectionDialog'
+import { useRemoveFromCollection } from '@/composables/series/useRemoveFromCollection'
+import { BrowsingContextKey, popBrowsingContext } from '@/functions/browsing-context'
+import { useEditDialog } from '@/composables/entity/useEditDialog'
 
 export function useSeriesActions(
   series: MaybeRefOrGetter<SeriesDto>,
@@ -34,6 +36,13 @@ export function useSeriesActions(
   const { readFirstBook } = useBooks(series)
   const { canRead, inProgress } = useSeries(series)
 
+  // browsing context
+  const context = inject(BrowsingContextKey, undefined)
+  const contextCollectionId = computed(() => {
+    const top = popBrowsingContext(toValue(context))?.top
+    if (top?.type === 'collection') return top.id
+  })
+
   const actions = computed<Action<ActionName>[]>(() => [
     ...(isAdmin.value
       ? [
@@ -44,6 +53,19 @@ export function useSeriesActions(
               (addToCollectionActivator.value = event.currentTarget as Element),
             onClick: () => {
               addToCollection(() => callback(ActionName.AddToCollection))
+            },
+          },
+        ]
+      : []),
+    ...(isAdmin.value && !!contextCollectionId.value
+      ? [
+          {
+            title: intl.formatMessage(actionDetails[ActionName.RemoveFromCollection].message),
+            action: ActionName.RemoveFromCollection,
+            onMouseenter: (event: Event) =>
+              (removeFromCollectionActivator.value = event.currentTarget as Element),
+            onClick: () => {
+              removeFromCollection(() => callback(ActionName.RemoveFromCollection))
             },
           },
         ]
@@ -100,13 +122,13 @@ export function useSeriesActions(
     ...(isAdmin.value
       ? [
           {
-            title: intl.formatMessage(actionDetails[ActionName.EditSeries].message),
-            icon: actionDetails[ActionName.EditSeries].icon,
-            action: ActionName.EditSeries,
+            title: intl.formatMessage(actionDetails[ActionName.EditEntity].message),
+            icon: actionDetails[ActionName.EditEntity].icon,
+            action: ActionName.EditEntity,
             onMouseenter: (event: Event) =>
               (editMetadataActivator.value = event.currentTarget as Element),
             onClick: () => {
-              updateSeriesMetadata(() => callback(ActionName.EditSeries))
+              updateSeriesMetadata(() => callback(ActionName.EditEntity))
             },
           },
         ]
@@ -191,6 +213,18 @@ export function useSeriesActions(
   }
   //endregion
 
+  //region Remove from collection
+  const {
+    prepareDialog: showRemoveFromCollectionDialog,
+    activator: removeFromCollectionActivator,
+  } = useRemoveFromCollection()
+
+  function removeFromCollection(callback: () => void) {
+    if (contextCollectionId.value)
+      void showRemoveFromCollectionDialog([toValue(series).id], contextCollectionId.value, callback)
+  }
+  //endregion
+
   //region Add to read list
   const { prepareDialog: showAddToReadListDialog, activator: addToReadListActivator } =
     useAddToReadListDialog()
@@ -202,10 +236,10 @@ export function useSeriesActions(
 
   //region Update Series metadata
   const { prepareDialog: showEditSeriesMetadataDialog, activator: editMetadataActivator } =
-    useEditSeriesMetadataDialog()
+    useEditDialog()
 
   function updateSeriesMetadata(callback: () => void) {
-    showEditSeriesMetadataDialog(toValue(series), callback)
+    showEditSeriesMetadataDialog([toValue(series)], callback)
   }
   //endregion
 

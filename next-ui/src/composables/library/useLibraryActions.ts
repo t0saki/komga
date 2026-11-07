@@ -30,7 +30,7 @@ export function useLibraryActions(
   const display = useDisplay()
 
   const actions = computed<Action<LibraryAction>[]>(() =>
-    !isAdmin
+    !isAdmin.value
       ? []
       : [
           {
@@ -143,9 +143,11 @@ export function useLibraryActions(
       scrollable: true,
       fullscreen: display.xs.value,
     }
-    dialogConfirmEdit.value.slot = {
-      component: markRaw(CreateEdit),
-      props: { createMode: false },
+    dialogConfirmEdit.value.slots = {
+      default: {
+        component: markRaw(CreateEdit),
+        props: { createMode: false },
+      },
     }
     dialogConfirmEdit.value.record = toValue(library)
     dialogConfirmEdit.value.callback = (

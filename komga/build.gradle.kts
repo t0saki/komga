@@ -95,7 +95,7 @@ dependencies {
   implementation("org.apache.lucene:lucene-queryparser:${libs.versions.lucene.get()}")
   implementation("org.apache.lucene:lucene-backward-codecs:${libs.versions.lucene.get()}")
 
-  implementation("com.ibm.icu:icu4j:78.3")
+  implementation("com.ibm.icu:icu4j:79.1")
 
   implementation("com.appmattus.crypto:cryptohash:1.0.2")
 
@@ -142,6 +142,7 @@ dependencies {
   testImplementation("com.google.jimfs:jimfs:1.3.2")
 
   testImplementation("com.tngtech.archunit:archunit-junit5:1.5.1")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 
   benchmarkImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
   benchmarkImplementation("org.openjdk.jmh:jmh-core:1.37")
@@ -381,6 +382,12 @@ tasks.named<JooqGenerate>("generateTasksJooq") {
   sqliteMigrationDirs["tasks"]?.forEach { inputs.dir(it) }
   allInputsDeclared = true
   dependsOn("flywayMigrateTasks")
+}
+tasks.withType<JooqGenerate>().configureEach {
+  javaExecSpec =
+    Action<JavaExecSpec> {
+      jvmArgs("--enable-native-access=ALL-UNNAMED")
+    }
 }
 
 tasks.whenTaskAdded {

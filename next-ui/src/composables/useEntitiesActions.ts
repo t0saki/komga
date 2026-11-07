@@ -24,6 +24,25 @@ import {
 import type { BookDto, CollectionDto, ReadListDto, SeriesDto } from '@/generated/openapi'
 import { useAddToReadListDialog } from '@/composables/book/useAddToReadListDialog'
 import { useAddToCollectionDialog } from '@/composables/series/useAddToCollectionDialog'
+import { useCurrentBrowsingContextFromRoute } from '@/composables/browsingContext'
+import { useRemoveFromReadList } from '@/composables/book/useRemoveFromReadList'
+import { useRemoveFromCollection } from '@/composables/series/useRemoveFromCollection'
+import { useEditDialog } from '@/composables/entity/useEditDialog'
+import { useBulkEditSeriesMetadataDialog } from '@/composables/series/useBulkEditSeriesMetadataDialog'
+import { useBulkEditBookMetadataDialog } from '@/composables/book/useBulkEditBookMetadataDialog'
+
+type ActionSpecific = {
+  shouldShow: () => boolean
+  [key: string]: unknown // Allows any additional property
+}
+
+type ActionExtra = {
+  min?: number
+}
+
+type ActionGroupEntry = Partial<Action<ActionName>> & ActionExtra
+
+type ActionGroup = { menuItems?: ActionGroupEntry[] }
 
 export function useEntitiesActions(
   entities: MaybeRefOrGetter<(BookDto | SeriesDto | CollectionDto | ReadListDto)[]>,
@@ -37,41 +56,92 @@ export function useEntitiesActions(
   const entityKinds = computed(() => Array.from(new Set(toValue(entities).map(resolveEntityKind))))
   const commonActions = computed(() => getCommonActions(entityKinds.value))
 
-  //TODO: implement remaining actions
-  const actionsSpecifics: Partial<Record<ActionName, object>> = {
+  // context
+  const { context } = useCurrentBrowsingContextFromRoute()
+  const contextCollectionId = computed(() => {
+    if (context.value?.type === 'collection') return context.value.id
+  })
+  const contextReadListId = computed(() => {
+    if (context.value?.type === 'readList') return context.value.id
+  })
+
+  const actionsSpecifics: Partial<Record<ActionName, ActionSpecific>> = {
     [ActionName.AddToCollection]: {
+      shouldShow: () => true,
       onMouseenter: (event: Event) =>
         (addToCollectionActivator.value = event.currentTarget as Element),
       onClick: () => {
         addToCollection(() => callback(ActionName.AddToCollection))
       },
     },
+    [ActionName.RemoveFromCollection]: {
+      shouldShow: () => !!contextCollectionId.value,
+      onMouseenter: (event: Event) =>
+        (removeFromCollectionActivator.value = event.currentTarget as Element),
+      onClick: () => {
+        removeFromCollection(() => callback(ActionName.RemoveFromCollection))
+      },
+    },
     [ActionName.AddToReadList]: {
+      shouldShow: () => true,
       onMouseenter: (event: Event) =>
         (addToReadListActivator.value = event.currentTarget as Element),
       onClick: () => {
         addToReadList(() => callback(ActionName.AddToReadList))
       },
     },
-    [ActionName.EditBook]: {
-      disabled: true,
+    [ActionName.RemoveFromReadList]: {
+      shouldShow: () => !!contextReadListId.value,
+      onMouseenter: (event: Event) =>
+        (removeFromReadListActivator.value = event.currentTarget as Element),
+      onClick: () => {
+        removeFromReadList(() => callback(ActionName.RemoveFromReadList))
+      },
     },
-    [ActionName.EditSeries]: {
-      disabled: true,
+    [ActionName.EditEntity]: {
+      shouldShow: () => true,
+      onMouseenter: (event: Event) => (editEntityActivator.value = event.currentTarget as Element),
+      onClick: () => {
+        editEntities(() => callback(ActionName.EditEntity))
+      },
+      min: 2,
+    },
+    [ActionName.EditBooksBulk]: {
+      shouldShow: () => true,
+      onMouseenter: (event: Event) =>
+        (bulkEditBookActivator.value = event.currentTarget as Element),
+      onClick: () => {
+        bulkEditBooks(() => callback(ActionName.EditBooksBulk))
+      },
+      min: 2,
+    },
+    [ActionName.EditSeriesBulk]: {
+      shouldShow: () => true,
+      onMouseenter: (event: Event) =>
+        (bulkEditSeriesActivator.value = event.currentTarget as Element),
+      onClick: () => {
+        bulkEditSeries(() => callback(ActionName.EditSeriesBulk))
+      },
+      min: 2,
     },
     [ActionName.MarkRead]: {
+      shouldShow: () => true,
       onClick: () => markRead(),
     },
     [ActionName.MarkUnread]: {
+      shouldShow: () => true,
       onClick: () => markUnread(),
     },
     [ActionName.Analyze]: {
+      shouldShow: () => true,
       onClick: () => analyze(),
     },
     [ActionName.RefreshMetadata]: {
+      shouldShow: () => true,
       onClick: () => refreshMetadata(),
     },
     [ActionName.Delete]: {
+      shouldShow: () => true,
       onMouseenter: (event: Event) =>
         (dialogConfirm.value.activator = event.currentTarget as Element),
       onClick: () => {
@@ -81,7 +151,7 @@ export function useEntitiesActions(
   }
   const nonAdmin = [ActionName.MarkRead, ActionName.MarkUnread] as ActionName[]
 
-  const actions = computed<Action<ActionName>[]>(() =>
+  const actions = computed<(Action<ActionName> & ActionGroup & ActionExtra)[]>(() =>
     commonActions.value
       .map((action) => ({
         title: intl.formatMessage(actionDetails[action].message),
@@ -89,17 +159,10 @@ export function useEntitiesActions(
         action: action,
         ...actionsSpecifics[action],
       }))
-      .filter((action) => (isAdmin.value ? true : nonAdmin.includes(action.action))),
+      .filter((action) => (isAdmin.value ? true : nonAdmin.includes(action.action)))
+      // filter out non-contextual actions
+      .filter((it) => it?.shouldShow?.() || false),
   )
-
-  //region Update Series metadata
-  // const { prepareDialog: showEditBookMetadataDialog, activator: editMetadataActivator } =
-  //   useEditBookMetadataDialog()
-  //
-  // function updateBookMetadata() {
-  //   showEditBookMetadataDialog(toValue(book))
-  // }
-  //endregion
 
   //region Refresh Metadata
   function refreshMetadata() {
@@ -161,6 +224,26 @@ export function useEntitiesActions(
   }
   //endregion
 
+  //region Remove from collection
+  const {
+    prepareDialog: showRemoveFromCollectionDialog,
+    activator: removeFromCollectionActivator,
+  } = useRemoveFromCollection()
+
+  function removeFromCollection(callback: () => void) {
+    if (contextCollectionId.value)
+      void showRemoveFromCollectionDialog(
+        toValue(entities).flatMap((e) => {
+          if (isSeries(e)) return [e.id]
+          if (isBook(e) && e.oneshot) return [e.seriesId]
+          return []
+        }),
+        contextCollectionId.value,
+        callback,
+      )
+  }
+  //endregion
+
   //region Add to read list
   const { prepareDialog: showAddToReadListDialog, activator: addToReadListActivator } =
     useAddToReadListDialog()
@@ -168,6 +251,55 @@ export function useEntitiesActions(
   function addToReadList(callback: () => void) {
     showAddToReadListDialog(
       toValue(entities).filter((e) => isBook(e) || isSeries(e)),
+      callback,
+    )
+  }
+  //endregion
+
+  //region Remove from read list
+  const { prepareDialog: showRemoveFromReadListDialog, activator: removeFromReadListActivator } =
+    useRemoveFromReadList()
+
+  function removeFromReadList(callback: () => void) {
+    if (contextReadListId.value)
+      void showRemoveFromReadListDialog(
+        toValue(entities).filter((e) => isBook(e)),
+        contextReadListId.value,
+        callback,
+      )
+  }
+  //endregion
+
+  //region Edit entities
+  const { prepareDialog: showEditDialog, activator: editEntityActivator } = useEditDialog()
+
+  function editEntities(callback: () => void) {
+    void showEditDialog(
+      toValue(entities).filter((e) => isBook(e) || isSeries(e)),
+      callback,
+    )
+  }
+  //endregion
+
+  //region Edit series in bulk
+  const { prepareDialog: showBulkEditSeriesDialog, activator: bulkEditSeriesActivator } =
+    useBulkEditSeriesMetadataDialog()
+
+  function bulkEditSeries(callback: () => void) {
+    showBulkEditSeriesDialog(
+      toValue(entities).filter((e) => isSeries(e)),
+      callback,
+    )
+  }
+  //endregion
+
+  //region Edit books in bulk
+  const { prepareDialog: showBulkEditBookDialog, activator: bulkEditBookActivator } =
+    useBulkEditBookMetadataDialog()
+
+  function bulkEditBooks(callback: () => void) {
+    void showBulkEditBookDialog(
+      toValue(entities).filter((e) => isBook(e)),
       callback,
     )
   }

@@ -44,7 +44,15 @@
           v-if="!user.id"
           class="mb-4"
         />
-        <div class="text-label-large">Permissions</div>
+        <div class="text-label-large">
+          {{
+            $formatMessage({
+              description: 'User creation/edit dialog: Permissions section header',
+              defaultMessage: 'Permissions',
+              id: 'NgRz9T',
+            })
+          }}
+        </div>
       </v-col>
     </v-row>
     <!-- Roles  -->
@@ -148,7 +156,15 @@
     <v-row>
       <v-col>
         <v-divider class="mb-4" />
-        <div class="text-label-large">Age restriction</div>
+        <div class="text-label-large">
+          {{
+            $formatMessage({
+              description: 'User creation/edit dialog: Age restriction section header',
+              defaultMessage: 'Age restriction',
+              id: 'KPlFII',
+            })
+          }}
+        </div>
       </v-col>
     </v-row>
     <v-row>
@@ -192,7 +208,15 @@
     <v-row>
       <v-col>
         <v-divider class="mb-4" />
-        <div class="text-label-large">Label restrictions</div>
+        <div class="text-label-large">
+          {{
+            $formatMessage({
+              description: 'User creation/edit dialog: label restrictions section header',
+              defaultMessage: 'Label restrictions',
+              id: 'mQ3hSR',
+            })
+          }}
+        </div>
       </v-col>
     </v-row>
     <!-- Allow labels -->
@@ -304,25 +328,25 @@ const userRoles = computed(() =>
 const ageRestrictions = [
   {
     title: intl.formatMessage({
-      description: 'User creation/edit dialog: Age restriction field possible option',
+      description: 'User creation/edit dialog: Age restriction field - no restriction',
       defaultMessage: 'No restriction',
-      id: 'AeA9Ka',
+      id: '5voJNm',
     }),
     value: 'NONE',
   },
   {
     title: intl.formatMessage({
-      description: 'User creation/edit dialog: Age restriction field possible option',
-      defaultMessage: 'Allow only under',
-      id: '/bathK',
+      description: 'User creation/edit dialog: Age restriction field - allow up to',
+      defaultMessage: 'Allow up to (inclusive)',
+      id: 'a+32Gi',
     }),
     value: 'ALLOW_ONLY',
   },
   {
     title: intl.formatMessage({
-      description: 'User creation/edit dialog: Age restriction field possible option',
-      defaultMessage: 'Exclude over',
-      id: 'wmGcF+',
+      description: 'User creation/edit dialog: Age restriction field - exclude from',
+      defaultMessage: 'Exclude from (inclusive)',
+      id: 'Dsytsl',
     }),
     value: 'EXCLUDE',
   },

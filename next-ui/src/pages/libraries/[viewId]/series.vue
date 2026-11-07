@@ -24,7 +24,7 @@
         <PagingSelector v-model="appStore.browsingPaging" />
 
         <FilterButton
-          :count="filterCount"
+          :count="filtersCountAll"
           :dot="!sortIsDefault"
           @click="filterDrawer = true"
         />
@@ -33,181 +33,15 @@
   </v-app-bar>
 
   <TempDrawer v-model="filterDrawer">
+    <FilterPanel
+      v-model="filters"
+      :count="filtersCountAll"
+      @clear="filtersClearAll()"
+    />
+
+    <v-divider />
+
     <v-list>
-      <v-list-subheader>
-        <div class="d-flex ga-2 align-center mb-1">
-          <span>{{ $formatMessage(commonMessages.filterPanelHeader) }}</span>
-          <FilterChipCount
-            :count="filterCount"
-            @clear="clearFilters()"
-          />
-        </div>
-      </v-list-subheader>
-
-      <FilterByReadStatus
-        v-model="filters.read.filter.v"
-        class="py-0"
-      />
-
-      <v-list class="py-0">
-        <FilterByOneShot v-model="filters.oneshot.filter" />
-        <FilterByComplete v-model="filters.complete.filter" />
-        <FilterByUnavailable v-model="filters.unavailable.filter" />
-      </v-list>
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelSeriesStatus)"
-          :count="filters.seriesStatus.count"
-          @clear="filters.seriesStatus.clear()"
-        >
-          <FilterBySeriesStatus v-model="filters.seriesStatus.filter.v" />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelGenre)"
-          :count="filters.genre.count"
-          @clear="filters.genre.clear()"
-        >
-          <FilterByGenre
-            v-model="filters.genre.filter.v"
-            v-model:mode="filters.genre.filter.m"
-          />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelTag)"
-          :count="filters.tag.count"
-          @clear="filters.tag.clear()"
-        >
-          <FilterByTag
-            v-model="filters.tag.filter.v"
-            v-model:mode="filters.tag.filter.m"
-          />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelPublisher)"
-          :count="filters.publisher.count"
-          @clear="filters.publisher.clear()"
-        >
-          <FilterByPublisher
-            v-model="filters.publisher.filter.v"
-            v-model:mode="filters.publisher.filter.m"
-          />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelReleaseYear)"
-          :count="filters.year.count"
-          @clear="filters.year.clear()"
-        >
-          <FilterByReleaseYear v-model="filters.year.filter" />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelAgeRating)"
-          :count="filters.age.count"
-          @clear="filters.age.clear()"
-        >
-          <FilterByAgeRating v-model="filters.age.filter" />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelLanguage)"
-          :count="filters.language.count"
-          @clear="filters.language.clear()"
-        >
-          <FilterByLanguage
-            v-model="filters.language.filter.v"
-            v-model:mode="filters.language.filter.m"
-          />
-        </FilterExpansionPanel>
-
-        <FilterExpansionPanel
-          :title="$formatMessage(commonMessages.filterPanelSharingLabel)"
-          :count="filters.sharingLabel.count"
-          @clear="filters.sharingLabel.clear()"
-        >
-          <FilterBySharingLabel
-            v-model="filters.sharingLabel.filter.v"
-            v-model:mode="filters.sharingLabel.filter.m"
-          />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider
-        ><span class="text-body-medium text-medium-emphasis">{{
-          $formatMessage(commonMessages.filterPanelContributors)
-        }}</span></v-divider
-      >
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          v-for="(filterContributor, role) in filterContributors"
-          :key="role"
-          :title="
-            contributorsRolesMessages?.[role]
-              ? $formatMessage(contributorsRolesMessages?.[role])
-              : role
-          "
-          :count="countFilter(filterContributor)"
-          @clear="filterContributorsClear(role)"
-        >
-          <FilterByContributor
-            v-model="filterContributor.v"
-            v-model:mode="filterContributor.m"
-            :role="role"
-          />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider
-        ><span class="text-body-medium text-medium-emphasis">{{
-          $formatMessage(commonMessages.filterPanelNotableEntities)
-        }}</span></v-divider
-      >
-
-      <v-expansion-panels
-        v-model="filterExpansionPanels"
-        variant="accordion"
-        class="no-padding"
-        flat
-        tile
-      >
-        <FilterExpansionPanel
-          v-for="(filterNotableEntity, kind) in filterNotableEntities"
-          :key="kind"
-          :title="
-            notableEntitiesKindsMessages?.[kind]
-              ? $formatMessage(notableEntitiesKindsMessages?.[kind])
-              : kind
-          "
-          :count="countFilter(filterNotableEntity)"
-          @clear="filterNotableEntitiesClear(kind)"
-        >
-          <FilterByNotableEntity
-            v-model="filterNotableEntity.v"
-            v-model:mode="filterNotableEntity.m"
-            :kind="kind"
-          />
-        </FilterExpansionPanel>
-      </v-expansion-panels>
-
-      <v-divider />
-
       <v-list-subheader>
         <span>{{ $formatMessage(commonMessages.filterPanelSort) }}</span>
         <SortRestore
@@ -226,8 +60,8 @@
   </TempDrawer>
 
   <EmptyStateFilterNoResults
-    v-if="totalElements === 0 && filterCount > 0"
-    @reset="clearFilters()"
+    v-if="totalElements === 0 && filtersCountAll > 0"
+    @reset="filtersClearAll()"
   />
 
   <ItemBrowser
@@ -243,7 +77,7 @@
     <template #default="{ item, isSelected, preSelect, toggleSelect }">
       <SeriesCard
         v-if="presentationModeEffective === 'grid'"
-        stretch-poster
+        :stretch-poster="appStore.stretchPoster"
         :series="item"
         :selected="isSelected"
         :pre-select="preSelect"
@@ -254,7 +88,7 @@
 
       <SeriesCardWide
         v-if="presentationModeEffective === 'list'"
-        stretch-poster
+        :stretch-poster="appStore.stretchPoster"
         :series="item"
         :selected="isSelected"
         :pre-select="preSelect"
@@ -275,17 +109,7 @@ import { useAppStore } from '@/stores/app'
 import { usePagination } from '@/composables/pagination'
 import { useSelectionStore } from '@/stores/selection'
 import { useDisplay } from 'vuetify'
-import {
-  schemaFilterContributorsToConditions,
-  schemaFilterStringToConditions,
-  schemaFilterReleaseYearToConditions,
-  schemaFilterAgeRatingToConditions,
-  schemaFilterReadStatusToConditions,
-  schemaFilterIncludeExcludeToConditions,
-  valuesToConditions,
-  countFilter,
-  schemaFilterNotableEntitiesToConditions,
-} from '@/functions/filter'
+import { valuesToConditions, filtersToConditions } from '@/functions/filter'
 import { commonMessages } from '@/utils/i18n/common-messages'
 import { useIntlFormatter } from '@/composables/intlFormatter'
 import { sortSeries } from '@/types/sort'
@@ -293,14 +117,13 @@ import PosterSizeSlider from '@/components/PosterSizeSlider.vue'
 import FilterButton from '@/components/filter/FilterButton.vue'
 import { usePresentationMode } from '@/composables/presentationMode'
 import { storeToRefs } from 'pinia'
-import { useFilterContributors, useFilterNotableEntities, useFilters } from '@/composables/filter'
+import { useFilters } from '@/composables/filter'
 import ChipCount from '@/components/ChipCount.vue'
-import { contributorsRolesMessages } from '@/types/referential/contributor'
 import { useSelectionContextualActions } from '@/composables/selection'
 import type { SearchConditionSeries } from '@/generated/openapi'
 import { BrowsingContextKey } from '@/functions/browsing-context'
 import { useSort } from '@/composables/sort'
-import { notableEntitiesKindsMessages } from '@/types/referential/notableEntity'
+import { useLibraryViewStore } from '@/stores/library-view'
 
 const route = useRoute('/libraries/[viewId]/series')
 const libraryViewId = route.params.viewId
@@ -315,6 +138,9 @@ const display = useDisplay()
 const appStore = useAppStore()
 const { isBrowsingScroll, isBrowsingPaged } = storeToRefs(appStore)
 
+const libraryViewStore = useLibraryViewStore()
+libraryViewStore.saveState(libraryViewId, 'series')
+
 const viewName = computed(() => `${libraryViewId}_series`)
 const { presentationMode, presentationModeEffective } = usePresentationMode(viewName)
 
@@ -322,47 +148,32 @@ const { page0, page1, pageCount } = usePagination()
 
 const selectionStore = useSelectionStore()
 
-function clearFilters() {
-  filterContributorsClearAll()
-  filterNotableEntitiesClearAll()
-  filtersClearAll()
-}
-
-const filterCount = computed(
-  () => filterContributorsCount.value + filterNotableEntitiesCount.value + filtersCountAll.value,
-)
-
-const {
-  filter: filterContributors,
-  countAll: filterContributorsCount,
-  clearAll: filterContributorsClearAll,
-  clear: filterContributorsClear,
-} = useFilterContributors()
-const {
-  filter: filterNotableEntities,
-  countAll: filterNotableEntitiesCount,
-  clearAll: filterNotableEntitiesClearAll,
-  clear: filterNotableEntitiesClear,
-} = useFilterNotableEntities()
-
 const {
   filters,
   clearAll: filtersClearAll,
   countAll: filtersCountAll,
-} = useFilters([
-  'seriesStatus',
-  'read',
-  'genre',
-  'tag',
-  'publisher',
-  'sharingLabel',
-  'language',
-  'year',
-  'age',
-  'complete',
-  'unavailable',
-  'oneshot',
-])
+} = useFilters(
+  [
+    'seriesStatus',
+    'read',
+    'genre',
+    'tag',
+    'publisher',
+    'sharingLabel',
+    'language',
+    'year',
+    'age',
+    'complete',
+    'unavailable',
+    'oneshot',
+    'contributors',
+    'notableEntities',
+  ],
+  {
+    viewName: viewName.value,
+    persist: true,
+  },
+)
 
 const { convertSortOptionDescriptor } = useIntlFormatter()
 const sortDefault: Sort[] = [{ key: 'metadata.titleSort', order: 'asc' }]
@@ -370,31 +181,19 @@ const sortOptions = sortSeries.map((it) => convertSortOptionDescriptor(it))
 const {
   sortActive,
   isDefault: sortIsDefault,
-  restore: sortRestore,
-} = useSort(sortDefault, sortOptions, false)
+  restoreDefault: sortRestore,
+} = useSort({
+  defaultSort: sortDefault,
+  options: sortOptions,
+  persist: true,
+  viewName: viewName.value,
+})
 
 const conds = computed(() => ({
   allOf: [
     valuesToConditions(libraryIds.value, 'libraryId'),
-    schemaFilterIncludeExcludeToConditions(filters.value.complete.filter, 'complete'),
-    schemaFilterIncludeExcludeToConditions(filters.value.unavailable.filter, 'deleted'),
-    schemaFilterIncludeExcludeToConditions(filters.value.oneshot.filter, 'oneShot'),
-    valuesToConditions(filters.value.seriesStatus.filter.v, 'seriesStatus'),
-    schemaFilterReadStatusToConditions(filters.value.read.filter),
-    schemaFilterStringToConditions(filters.value.genre.filter, 'genre', true),
-    schemaFilterStringToConditions(filters.value.tag.filter, 'tag', true),
-    schemaFilterStringToConditions(filters.value.publisher.filter, 'publisher', false),
-    schemaFilterStringToConditions(filters.value.sharingLabel.filter, 'sharingLabel', true),
-    schemaFilterStringToConditions(filters.value.language.filter, 'language', false),
-    schemaFilterReleaseYearToConditions(filters.value.year.filter),
-    schemaFilterAgeRatingToConditions(filters.value.age.filter),
-    ...Object.entries(filterContributors.value).map(([role, filter]) =>
-      schemaFilterContributorsToConditions(filter, role),
-    ),
-    ...Object.entries(filterNotableEntities.value).map(([kind, filter]) =>
-      schemaFilterNotableEntitiesToConditions(filter, kind),
-    ),
-  ].filter(Boolean) as SearchConditionSeries[],
+    ...filtersToConditions(filters),
+  ] as SearchConditionSeries[],
 }))
 
 // clear selection if filter or paging changes
@@ -442,16 +241,7 @@ const totalElements = computed(() =>
 useSelectionContextualActions(dataItems)
 
 const filterDrawer = ref(false)
-
-// shared model for all the expansion-panels, so only 1 is opened at the same time
-const filterExpansionPanels = ref()
 </script>
-
-<style lang="scss">
-.no-padding .v-expansion-panel-text__wrapper {
-  padding: 0 4px;
-}
-</style>
 
 <route lang="yaml">
 meta:

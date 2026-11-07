@@ -162,6 +162,21 @@ export const commonMessages = {
     defaultMessage: 'Read list created',
     id: 'estf95',
   }),
+  seriesFormEditGeneral: defineMessage({
+    description: 'Form edit series: General',
+    defaultMessage: 'General',
+    id: 'ZPuFVu',
+  }),
+  seriesFormEditTags:defineMessage({
+    description: 'Form edit series: Tags',
+    defaultMessage: 'Tags',
+    id: 'Epp7Fi',
+  }),
+  seriesFormEditPoster: defineMessage({
+    description: 'Form edit series: Poster',
+    defaultMessage: 'Poster',
+    id: 'Fdinos',
+  }),
   seriesFormEditSharing: defineMessage({
     description: 'Form edit series: Sharing',
     defaultMessage: 'Sharing',
@@ -176,6 +191,11 @@ export const commonMessages = {
     description: 'Form edit series: General - series publisher',
     defaultMessage: 'Publisher',
     id: 'CW0idP',
+  }),
+  seriesFormGeneralStatus: defineMessage({
+    description: 'Form edit series: General - series status',
+    defaultMessage: 'Publishing status',
+    id: '4CIw7i',
   }),
   seriesFormGeneralReadingDirection: defineMessage({
     description: 'Form edit series: General - series reading direction',
@@ -227,14 +247,74 @@ export const commonMessages = {
     defaultMessage: 'Collection',
     id: 'nWgSSS',
   }),
-  cardSubtitleNoReleaseDate:defineMessage({
+  cardSubtitleNoReleaseDate: defineMessage({
     description: 'Card subtitle: no release date',
     defaultMessage: 'No release date',
     id: '9mujmD',
   }),
-  cardSubtitleUnread:defineMessage({
+  cardSubtitleUnread: defineMessage({
     description: 'Card subtitle: unread',
     defaultMessage: 'Unread',
     id: 'wESuod',
+  }),
+  comboboxSharingLabels: defineMessage({
+    description: 'Combobox sharing label: label',
+    defaultMessage: 'Sharing labels',
+    id: '/TRmi5',
+  }),
+  comboboxTags: defineMessage({
+    description: 'Combobox tags: label',
+    defaultMessage: 'Tags',
+    id: '8KsYYJ',
+  }),
+  comboboxGenres: defineMessage({
+    description: 'Combobox genre: label',
+    defaultMessage: 'Genres',
+    id: '0OEO+j',
+  }),
+  bulkEditMultipleValues: defineMessage({
+    description: 'Bulk edit input fields: multiple values placeholder',
+    defaultMessage: 'Multiple values',
+    id: 'M3OTuv',
+  }),
+  bulkEditNoValue: defineMessage({
+    description: 'Bulk edit input fields: no value placeholder',
+    defaultMessage: 'No value',
+    id: 'pBivnm',
+  }),
+  bulkEditUnset: defineMessage({
+    description: 'Bulk edit input fields: unset values hint',
+    defaultMessage: 'Will clear value on all selected items',
+    id: 'If3RCw',
+  }),
+  bulkEditExistingValues: defineMessage({
+    description: 'Bulk edit input fields: existing values header in dropdown list',
+    defaultMessage: 'Existing values',
+    id: '+sF9Fw',
+  }),
+  bookFormEditContributors: defineMessage({
+    description: 'Form edit book: Contributors',
+    defaultMessage: 'Contributors',
+    id: 'CqlsIa',
+  }),
+  bookFormEditNotableEntities: defineMessage({
+    description: 'Form edit book: Notable Entities',
+    defaultMessage: 'Notable entities',
+    id: '1A8Mc1',
+  }),
+  bookFormEditTags: defineMessage({
+    description: 'Form edit book: Tags',
+    defaultMessage: 'Tags',
+    id: 'UFZ+PY',
+  }),
+  bookFormEditLinks: defineMessage({
+    description: 'Form edit book: Links',
+    defaultMessage: 'Links',
+    id: 'VeEnkD',
+  }),
+  bookFormEditPoster: defineMessage({
+    description: 'Form edit book: Poster',
+    defaultMessage: 'Poster',
+    id: 'xjHL5K',
   }),
 }

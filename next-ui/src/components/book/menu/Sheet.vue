@@ -41,12 +41,13 @@ const main = [
   ActionName.OpenReaderIncognito,
   ActionName.AddToCollection,
   ActionName.AddToReadList,
+  ActionName.RemoveFromReadList,
   ActionName.MarkRead,
   ActionName.MarkUnread,
   ActionName.Download,
 ] as ActionName[]
 const management = [
-  ActionName.EditBook,
+  ActionName.EditEntity,
   ActionName.RefreshMetadata,
   ActionName.Analyze,
   ActionName.Delete,
