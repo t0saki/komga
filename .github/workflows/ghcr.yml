@@ -75,10 +75,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       # The image is pushed without the full test suite (Test Komga runs it, in parallel).
-      # The fork's own beans hook into upstream ones by name and by type, which a merge of
-      # an upstream release can break without a compile error: these few tests load the
-      # application context, so that such a merge fails here instead of publishing an
-      # image that does not start.
+      # A merge of an upstream release can break the fork's own beans, or clash with them,
+      # without a compile error: these few tests load the application context, so that such
+      # a merge fails here instead of publishing an image that does not start. The session
+      # and unicode tests also guard fixes the production pool size relies on.
       - name: Smoke test the fork's backend patches
         run: >-
           ./gradlew :komga:test

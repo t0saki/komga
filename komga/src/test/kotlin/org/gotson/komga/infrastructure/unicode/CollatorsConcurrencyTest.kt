@@ -8,7 +8,7 @@ import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class FrozenCollatorsConfigurationTest {
+class CollatorsConcurrencyTest {
   private val threads = 8
 
   // long enough, and mixing scripts and accents, so that every comparison goes through the collator's shared buffer
@@ -37,9 +37,7 @@ class FrozenCollatorsConfigurationTest {
   }
 
   @Test
-  fun `given frozen collators when sorting from several threads then every thread gets a correctly sorted list`() {
-    FrozenCollatorsConfiguration()
-
+  fun `given shared collators when sorting from several threads then every thread gets a correctly sorted list`() {
     listOf(Collators.collator1, Collators.collator3).forEach { collator ->
       assertThat(collator.isFrozen).isTrue
 

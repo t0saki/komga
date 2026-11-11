@@ -15,7 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import javax.sql.DataSource
 
 @SpringBootTest
-class JdbcSessionTransactionConfigurationTest(
+class SessionTransactionsTest(
   @Autowired private val sessionRepository: SessionRepository<out Session>,
   @Autowired private val mainDataSourceRW: DataSource,
   @Autowired private val transactionManagers: List<PlatformTransactionManager>,
